@@ -1,0 +1,167 @@
+# Contrôleur Palazzetti
+
+Interface web moderne pour contrôler un poêle à pellets Palazzetti via communication série.
+
+## 🚀 Fonctionnalités
+
+- **Interface web moderne** avec design responsive
+- **Communication série binaire** avec le protocole Palazzetti (38400, 8N2)
+- **Contrôle en temps réel** via WebSocket
+- **Mode développement** avec simulation série
+- **Tests de communication** intégrés
+- **Support multi-plateforme** (Windows, Linux, macOS)
+
+## 📋 Prérequis
+
+- Python 3.7+
+- Port série disponible (USB-RS232 ou adaptateur RJ11)
+- Poêle Palazzetti compatible
+
+## 🛠️ Installation
+
+### 1. Cloner le projet
+```bash
+git clone <repository-url>
+cd PalazzetiControler/raspberry_pi
+```
+
+### 2. Installer les dépendances
+```bash
+pip install -r requirements.txt
+```
+
+### 3. Configuration
+Les paramètres par défaut sont dans `config.py` :
+- **Port série** : `/dev/ttyUSB0` (Linux) ou `COM3` (Windows)
+- **Baudrate** : 38400
+- **Configuration** : 8N2 (8 bits, pas de parité, 2 stop bits)
+
+## 🎯 Utilisation
+
+### Mode développement (sans poêle)
+```bash
+# Linux/macOS
+./dev.sh
+
+# Windows
+dev.cmd
+```
+
+### Mode production (avec poêle connecté)
+```bash
+# Linux/macOS
+python3 palazzetti_controller.py
+
+# Windows
+dev-serial.cmd
+```
+
+### Tests de communication
+```bash
+# Test complet
+python3 test_communication.py
+
+# Tests spécifiques
+python3 test_communication.py --ports    # Lister les ports
+python3 test_communication.py --sync     # Test synchronisation
+python3 test_communication.py --status   # Test lecture statut
+python3 test_communication.py --temp     # Test lecture température
+```
+
+## 🌐 Interface web
+
+Une fois lancé, l'interface est disponible sur :
+- **URL** : http://localhost:5000
+- **Fonctionnalités** :
+  - Affichage du statut en temps réel
+  - Contrôle de la température de consigne
+  - Allumage/Extinction du poêle
+  - Interface responsive (mobile/desktop)
+
+## 🔧 Configuration avancée
+
+### Variables d'environnement
+```bash
+export SERIAL_PORT="/dev/ttyUSB0"  # Port série
+export BAUD_RATE="38400"           # Vitesse de communication
+export TIMEOUT="5"                 # Timeout en secondes
+export HOST="0.0.0.0"              # Adresse d'écoute
+export PORT="5000"                 # Port web
+export DEBUG="true"                # Mode debug
+```
+
+### Protocole de communication
+
+Le poêle Palazzetti utilise un **protocole binaire** :
+- **Format** : Trames de 11 bytes `[ID][D0-D7][PAD][CS]`
+- **Synchronisation** : Trame `0x00` avant chaque commande
+- **Lecture** : ID `0x01` avec adresse sur 2 bytes
+- **Écriture** : ID `0x02` avec adresse + données
+- **Checksum** : Somme simple des bytes
+
+#### Adresses de registres
+- `0x20, 0x1C` : Statut du poêle
+- `0x20, 0x0E` : Température actuelle
+- `0x20, 0x0F` : Température de consigne
+
+## 🐛 Dépannage
+
+### Problèmes courants
+
+#### 1. Port série non trouvé
+```bash
+# Lister les ports disponibles
+python3 test_communication.py --ports
+
+# Vérifier les permissions (Linux)
+sudo usermod -a -G dialout $USER
+```
+
+#### 2. Erreur de communication
+- Vérifier que le poêle est allumé
+- Vérifier la connexion du câble RJ11
+- Tester avec `python3 test_communication.py --sync`
+
+#### 3. Interface non accessible
+- Vérifier que le port 5000 est libre
+- Vérifier le firewall
+- Utiliser `http://127.0.0.1:5000` au lieu de `localhost`
+
+### Logs de debug
+```bash
+# Activer les logs détaillés
+export DEBUG=true
+python3 palazzetti_controller.py
+```
+
+## 📚 Documentation
+
+- [Protocole de communication](docs/protocole_palazzeti.md)
+- [Guide d'utilisation](docs/guide_utilisation.md)
+- [Mode nuit](docs/mode_nuit_explication.md)
+
+## 🔗 Références
+
+- [Blog Palazzetti-Martina - La liaison série](https://palazzetti-martina.blogspot.com/2020/01/la-liaison-serie.html)
+- [Blog Palazzetti-Martina - Les trames](https://palazzetti-martina.blogspot.com/2020/01/les-trames.html)
+- [Blog Palazzetti-Martina - Table des registres](https://palazzetti-martina.blogspot.com/2020/02/la-table-des-registres.html)
+
+## 📄 Licence
+
+Ce projet est sous licence MIT. Voir le fichier LICENSE pour plus de détails.
+
+## 🤝 Contribution
+
+Les contributions sont les bienvenues ! N'hésitez pas à :
+- Signaler des bugs
+- Proposer des améliorations
+- Ajouter de nouvelles fonctionnalités
+
+## 📞 Support
+
+Pour toute question ou problème :
+1. Vérifiez la documentation
+2. Consultez les issues existantes
+3. Créez une nouvelle issue si nécessaire
+
+
