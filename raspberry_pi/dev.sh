@@ -12,15 +12,19 @@ if ! command -v python3 &> /dev/null; then
     exit 1
 fi
 
-# Vérifier que pip est installé
-if ! command -v pip3 &> /dev/null; then
-    echo "❌ pip3 n'est pas installé"
-    exit 1
+# Créer l'environnement virtuel s'il n'existe pas
+if [ ! -d "venv" ]; then
+    echo "📦 Création de l'environnement virtuel..."
+    python3 -m venv venv
 fi
+
+# Activer l'environnement virtuel
+echo "🔧 Activation de l'environnement virtuel..."
+source venv/bin/activate
 
 # Installer les dépendances si nécessaire
 echo "📦 Vérification des dépendances..."
-pip3 install -r requirements.txt --quiet
+pip install -r requirements.txt --quiet
 
 # Lancer l'application en mode développement
 echo "🚀 Lancement de l'application..."
@@ -29,6 +33,6 @@ echo "   - Interface: http://localhost:5000"
 echo "   - Arrêt: Ctrl+C"
 echo ""
 
-python3 palazzetti_controller.py --dev
+python palazzetti_controller.py --dev
 
 

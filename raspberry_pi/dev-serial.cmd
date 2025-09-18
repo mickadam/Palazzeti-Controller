@@ -13,13 +13,15 @@ if errorlevel 1 (
     exit /b 1
 )
 
-REM Vérifier que pip est installé
-pip --version >nul 2>&1
-if errorlevel 1 (
-    echo ❌ pip n'est pas installé
-    pause
-    exit /b 1
+REM Créer l'environnement virtuel s'il n'existe pas
+if not exist "venv" (
+    echo 📦 Création de l'environnement virtuel...
+    python -m venv venv
 )
+
+REM Activer l'environnement virtuel
+echo 🔧 Activation de l'environnement virtuel...
+call venv\Scripts\activate.bat
 
 REM Installer les dépendances si nécessaire
 echo 📦 Vérification des dépendances...

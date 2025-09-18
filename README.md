@@ -25,12 +25,45 @@ git clone <repository-url>
 cd PalazzetiControler/raspberry_pi
 ```
 
-### 2. Installer les dépendances
+### 2. Créer et activer l'environnement virtuel
+```bash
+# Créer l'environnement virtuel
+python3 -m venv venv
+
+# Activer l'environnement virtuel
+# Sur Linux/macOS :
+source venv/bin/activate
+# Sur Windows :
+venv\Scripts\activate
+```
+
+### 3. Installer les dépendances
 ```bash
 pip install -r requirements.txt
 ```
 
-### 3. Configuration
+> **Note** : L'environnement virtuel est nécessaire pour éviter les conflits avec les packages système, surtout sur les nouvelles versions de Python qui protègent l'environnement global.
+
+### 4. Gestion de l'environnement virtuel
+
+#### Activation/Désactivation
+```bash
+# Activer l'environnement virtuel
+source venv/bin/activate    # Linux/macOS
+venv\Scripts\activate       # Windows
+
+# Désactiver l'environnement virtuel
+deactivate
+```
+
+#### Vérification
+```bash
+# Vérifier que l'environnement est activé (vous devriez voir (venv) dans le prompt)
+which python    # Linux/macOS
+where python    # Windows
+```
+
+### 5. Configuration
 Les paramètres par défaut sont dans `config.py` :
 - **Port série** : `/dev/ttyUSB0` (Linux) ou `COM3` (Windows)
 - **Baudrate** : 38400
@@ -40,32 +73,38 @@ Les paramètres par défaut sont dans `config.py` :
 
 ### Mode développement (sans poêle)
 ```bash
-# Linux/macOS
+# Linux/macOS - Le script gère automatiquement l'environnement virtuel
 ./dev.sh
 
-# Windows
+# Windows - Le script gère automatiquement l'environnement virtuel
 dev.cmd
 ```
 
 ### Mode production (avec poêle connecté)
 ```bash
-# Linux/macOS
-python3 palazzetti_controller.py
+# Linux/macOS - Activer l'environnement virtuel d'abord
+source venv/bin/activate
+python palazzetti_controller.py
 
-# Windows
+# Windows - Le script gère automatiquement l'environnement virtuel
 dev-serial.cmd
 ```
 
 ### Tests de communication
 ```bash
+# Activer l'environnement virtuel d'abord
+source venv/bin/activate  # Linux/macOS
+# ou
+venv\Scripts\activate     # Windows
+
 # Test complet
-python3 test_communication.py
+python test_communication.py
 
 # Tests spécifiques
-python3 test_communication.py --ports    # Lister les ports
-python3 test_communication.py --sync     # Test synchronisation
-python3 test_communication.py --status   # Test lecture statut
-python3 test_communication.py --temp     # Test lecture température
+python test_communication.py --ports    # Lister les ports
+python test_communication.py --sync     # Test synchronisation
+python test_communication.py --status   # Test lecture statut
+python test_communication.py --temp     # Test lecture température
 ```
 
 ## 🌐 Interface web
@@ -110,8 +149,11 @@ Le poêle Palazzetti utilise un **protocole binaire** :
 
 #### 1. Port série non trouvé
 ```bash
+# Activer l'environnement virtuel d'abord
+source venv/bin/activate
+
 # Lister les ports disponibles
-python3 test_communication.py --ports
+python test_communication.py --ports
 
 # Vérifier les permissions (Linux)
 sudo usermod -a -G dialout $USER
@@ -120,7 +162,7 @@ sudo usermod -a -G dialout $USER
 #### 2. Erreur de communication
 - Vérifier que le poêle est allumé
 - Vérifier la connexion du câble RJ11
-- Tester avec `python3 test_communication.py --sync`
+- Tester avec `python test_communication.py --sync` (après activation de l'environnement virtuel)
 
 #### 3. Interface non accessible
 - Vérifier que le port 5000 est libre
@@ -129,9 +171,12 @@ sudo usermod -a -G dialout $USER
 
 ### Logs de debug
 ```bash
+# Activer l'environnement virtuel
+source venv/bin/activate
+
 # Activer les logs détaillés
 export DEBUG=true
-python3 palazzetti_controller.py
+python palazzetti_controller.py
 ```
 
 ## 📚 Documentation
