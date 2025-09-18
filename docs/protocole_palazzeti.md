@@ -1,4 +1,4 @@
-# Protocole de Communication Palazzeti (Protocole Binaire)
+# WIP - Protocole de Communication Palazzeti (Protocole Binaire)
 
 ## Vue d'ensemble
 
