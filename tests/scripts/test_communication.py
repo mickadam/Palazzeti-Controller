@@ -6,8 +6,8 @@ import time
 import sys
 import os
 
-# Ajouter le répertoire parent au path pour importer les modules
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+# Ajouter le répertoire raspberry_pi au path pour importer les modules
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'raspberry_pi'))
 
 from config import SERIAL_PORT, BAUD_RATE, TIMEOUT, REGISTER_STATUS, REGISTER_TEMPERATURE, REGISTER_SETPOINT
 from frame import Frame, construct_read_frame, construct_write_frame, parse_temperature, parse_status

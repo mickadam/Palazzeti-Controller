@@ -1,4 +1,4 @@
-# Contrôleur Palazzetti
+# WIP - Contrôleur Palazzetti
 
 Interface web moderne pour contrôler un poêle à pellets Palazzetti via communication série.
 
@@ -190,6 +190,7 @@ python palazzetti_controller.py
 - [Blog Palazzetti-Martina - La liaison série](https://palazzetti-martina.blogspot.com/2020/01/la-liaison-serie.html)
 - [Blog Palazzetti-Martina - Les trames](https://palazzetti-martina.blogspot.com/2020/01/les-trames.html)
 - [Blog Palazzetti-Martina - Table des registres](https://palazzetti-martina.blogspot.com/2020/02/la-table-des-registres.html)
+- [Bibliothèque C++ Palazzetti par Domochip](https://github.com/Domochip/Palazzetti) - Implémentation alternative en C++ pour ESP8266 et microcontrôleurs
 
 ## 📄 Licence
 

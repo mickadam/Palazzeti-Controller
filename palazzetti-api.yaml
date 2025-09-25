@@ -1,0 +1,479 @@
+openapi: 3.0.3
+info:
+  title: API Contrôleur Palazzetti
+  description: |
+    API REST pour le contrôle et la surveillance d'un poêle à granulés Palazzetti.
+    
+    Cette API permet de :
+    - Surveiller l'état du poêle (température, statut, erreurs)
+    - Contrôler la puissance (allumer/éteindre)
+    - Définir la température de consigne
+    - Simuler des états en mode développement
+    
+    Le contrôleur communique avec le poêle via un protocole binaire sur port série.
+  version: 1.0.0
+  contact:
+    name: Contrôleur Palazzetti
+    email: support@palazzetti.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:5000
+    description: Serveur de développement local
+  - url: http://raspberry-pi:5000
+    description: Serveur Raspberry Pi
+
+tags:
+  - name: État
+    description: Surveillance de l'état du poêle
+  - name: Contrôle
+    description: Commandes de contrôle du poêle
+  - name: Développement
+    description: Fonctions de développement et simulation
+
+paths:
+  /:
+    get:
+      summary: Page principale
+      description: Retourne la page web principale de l'interface
+      tags:
+        - Interface
+      responses:
+        '200':
+          description: Page HTML de l'interface
+          content:
+            text/html:
+              schema:
+                type: string
+
+  /api/state:
+    get:
+      summary: Obtenir l'état du poêle
+      description: |
+        Récupère l'état complet du poêle incluant :
+        - Statut de connexion
+        - État du poêle (OFF, BURNING, etc.)
+        - Température actuelle et de consigne
+        - État de la puissance
+        - Codes d'erreur
+      tags:
+        - État
+      responses:
+        '200':
+          description: État du poêle récupéré avec succès
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StoveState'
+              examples:
+                normal_operation:
+                  summary: Poêle en fonctionnement normal
+                  value:
+                    connected: true
+                    status: "BURNING"
+                    power: true
+                    temperature: 22.5
+                    setpoint: 22.0
+                    night_mode: false
+                    error_code: 0
+                    error_message: "Aucune erreur"
+                disconnected:
+                  summary: Poêle déconnecté
+                  value:
+                    connected: false
+                    status: "OFF"
+                    power: false
+                    temperature: 22.0
+                    setpoint: 22.0
+                    night_mode: false
+                    error_code: 0
+                    error_message: "Aucune erreur"
+
+  /api/set_temperature:
+    post:
+      summary: Définir la température de consigne
+      description: |
+        Définit la température de consigne du poêle.
+        La température doit être comprise entre 15°C et 27°C.
+      tags:
+        - Contrôle
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - temperature
+              properties:
+                temperature:
+                  type: number
+                  format: float
+                  minimum: 15.0
+                  maximum: 27.0
+                  description: Température de consigne en degrés Celsius
+                  example: 22.5
+            examples:
+              normal_temp:
+                summary: Température normale
+                value:
+                  temperature: 22.5
+              min_temp:
+                summary: Température minimale
+                value:
+                  temperature: 15.0
+              max_temp:
+                summary: Température maximale
+                value:
+                  temperature: 27.0
+      responses:
+        '200':
+          description: Température définie avec succès
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+              examples:
+                success:
+                  summary: Succès
+                  value:
+                    success: true
+                    message: "Température définie à 22.5°C"
+        '400':
+          description: Erreur lors de la définition de la température
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_temp:
+                  summary: Température invalide
+                  value:
+                    success: false
+                    message: "Erreur lors de la définition de la température"
+
+  /api/set_power:
+    post:
+      summary: Allumer/éteindre le poêle
+      description: |
+        Allume ou éteint le poêle.
+        Cette commande contrôle l'alimentation principale du poêle.
+      tags:
+        - Contrôle
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - power
+              properties:
+                power:
+                  type: boolean
+                  description: État de la puissance (true = allumé, false = éteint)
+                  example: true
+            examples:
+              power_on:
+                summary: Allumer le poêle
+                value:
+                  power: true
+              power_off:
+                summary: Éteindre le poêle
+                value:
+                  power: false
+      responses:
+        '200':
+          description: Commande de puissance exécutée avec succès
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+              examples:
+                power_on_success:
+                  summary: Poêle allumé
+                  value:
+                    success: true
+                    message: "Poêle allumé"
+                power_off_success:
+                  summary: Poêle éteint
+                  value:
+                    success: true
+                    message: "Poêle éteint"
+        '400':
+          description: Erreur lors du changement d'état
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                power_error:
+                  summary: Erreur de commande
+                  value:
+                    success: false
+                    message: "Erreur lors du changement d'état"
+
+  /api/dev_mode:
+    get:
+      summary: Vérifier le mode développement
+      description: |
+        Indique si le contrôleur fonctionne en mode développement (mock)
+        ou en mode production avec connexion série réelle.
+      tags:
+        - Développement
+      responses:
+        '200':
+          description: Mode de fonctionnement récupéré
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  dev_mode:
+                    type: boolean
+                    description: true si en mode développement, false si en mode production
+                    example: true
+              examples:
+                dev_mode:
+                  summary: Mode développement
+                  value:
+                    dev_mode: true
+                production_mode:
+                  summary: Mode production
+                  value:
+                    dev_mode: false
+
+  /api/simulate_state:
+    post:
+      summary: Simuler un état du poêle
+      description: |
+        Simule un état du poêle pour les tests en mode développement.
+        Cette fonction n'est disponible qu'en mode développement.
+      tags:
+        - Développement
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [OFF, TEST_FIRE, HEAT_UP, BURNING, COOLING, STARTING, ALARM]
+                  description: Statut du poêle à simuler
+                  example: "BURNING"
+                temperature:
+                  type: number
+                  format: float
+                  minimum: 15.0
+                  maximum: 27.0
+                  description: Température actuelle à simuler
+                  example: 22.5
+                setpoint:
+                  type: number
+                  format: float
+                  minimum: 15.0
+                  maximum: 27.0
+                  description: Température de consigne à simuler
+                  example: 22.0
+                power:
+                  type: boolean
+                  description: État de la puissance à simuler
+                  example: true
+            examples:
+              burning_state:
+                summary: Poêle en combustion
+                value:
+                  status: "BURNING"
+                  temperature: 24.5
+                  setpoint: 22.0
+                  power: true
+              off_state:
+                summary: Poêle éteint
+                value:
+                  status: "OFF"
+                  temperature: 20.0
+                  setpoint: 22.0
+                  power: false
+              alarm_state:
+                summary: Poêle en alarme
+                value:
+                  status: "ALARM"
+                  temperature: 18.0
+                  setpoint: 22.0
+                  power: false
+      responses:
+        '200':
+          description: État simulé avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "État simulé: BURNING, 22.5°C, consigne 22.0°C"
+                  state:
+                    $ref: '#/components/schemas/StoveState'
+        '403':
+          description: Simulation non disponible en mode production
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                not_dev_mode:
+                  summary: Mode production
+                  value:
+                    success: false
+                    message: "Simulation disponible uniquement en mode développement"
+
+components:
+  schemas:
+    StoveState:
+      type: object
+      description: État complet du poêle Palazzetti
+      properties:
+        connected:
+          type: boolean
+          description: État de la connexion au poêle
+          example: true
+        status:
+          type: string
+          enum: [OFF, TEST_FIRE, HEAT_UP, BURNING, COOLING, STARTING, ALARM]
+          description: Statut actuel du poêle
+          example: "BURNING"
+        power:
+          type: boolean
+          description: État de la puissance (true = allumé, false = éteint)
+          example: true
+        temperature:
+          type: number
+          format: float
+          description: Température actuelle en degrés Celsius
+          example: 22.5
+        setpoint:
+          type: number
+          format: float
+          description: Température de consigne en degrés Celsius
+          example: 22.0
+        night_mode:
+          type: boolean
+          description: Mode nuit activé
+          example: false
+        error_code:
+          type: integer
+          description: Code d'erreur du poêle (0 = aucune erreur)
+          example: 0
+        error_message:
+          type: string
+          description: Message d'erreur correspondant au code
+          example: "Aucune erreur"
+      required:
+        - connected
+        - status
+        - power
+        - temperature
+        - setpoint
+        - night_mode
+        - error_code
+        - error_message
+
+    SuccessResponse:
+      type: object
+      description: Réponse de succès standard
+      properties:
+        success:
+          type: boolean
+          description: Indique si l'opération a réussi
+          example: true
+        message:
+          type: string
+          description: Message de confirmation
+          example: "Opération réussie"
+      required:
+        - success
+        - message
+
+    ErrorResponse:
+      type: object
+      description: Réponse d'erreur standard
+      properties:
+        success:
+          type: boolean
+          description: Indique si l'opération a échoué
+          example: false
+        message:
+          type: string
+          description: Message d'erreur
+          example: "Erreur lors de l'opération"
+      required:
+        - success
+        - message
+
+    StoveStatus:
+      type: string
+      enum: [OFF, TEST_FIRE, HEAT_UP, BURNING, COOLING, STARTING, ALARM]
+      description: |
+        Statuts possibles du poêle :
+        - OFF : Poêle éteint
+        - TEST_FIRE : Test de flamme
+        - HEAT_UP : Phase de chauffage
+        - BURNING : En combustion normale
+        - COOLING : Phase de refroidissement
+        - STARTING : Démarrage en cours
+        - ALARM : Alarme active
+
+    ErrorCode:
+      type: integer
+      description: |
+        Codes d'erreur Palazzetti :
+        - 0 : Aucune erreur
+        - 1 : E001 - Clavier de commande défectueux
+        - 4 : E004 - Coupure de liaison carte/clavier
+        - 257 : E101 - Allumage raté (granulés ou braséro)
+        - 264 : E108 - Porte ou trémie ouverte
+        - 265 : E109 - Alarme pression/disjoncteur
+        - 272 : E110 - Dysfonctionnement sonde température air
+        - 273 : E111 - Dysfonctionnement sonde température fumées
+
+  examples:
+    StoveStateExample:
+      summary: Exemple d'état de poêle en fonctionnement
+      value:
+        connected: true
+        status: "BURNING"
+        power: true
+        temperature: 24.2
+        setpoint: 22.0
+        night_mode: false
+        error_code: 0
+        error_message: "Aucune erreur"
+
+    TemperatureRequestExample:
+      summary: Exemple de requête de température
+      value:
+        temperature: 22.5
+
+    PowerRequestExample:
+      summary: Exemple de requête de puissance
+      value:
+        power: true
+
+    SimulationRequestExample:
+      summary: Exemple de simulation d'état
+      value:
+        status: "BURNING"
+        temperature: 24.5
+        setpoint: 22.0
+        power: true
+
+externalDocs:
+  description: Documentation du protocole Palazzetti
+  url: https://www.palazzetti.com/support/documentation

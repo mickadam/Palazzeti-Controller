@@ -68,6 +68,11 @@
             border-left-color: #6c757d;
         }
 
+        .status-card.alarm {
+            border-left-color: #dc3545;
+            background: #fff5f5;
+        }
+
         .status-info {
             display: flex;
             justify-content: space-between;
@@ -236,6 +241,170 @@
             pointer-events: none;
         }
 
+        .interface-inactive {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .interface-inactive .status-card {
+            background: #f8f9fa;
+            border-left-color: #6c757d;
+        }
+
+        .interface-inactive .temp-slider {
+            background: #e9ecef;
+            cursor: not-allowed;
+        }
+
+        .interface-inactive .temp-slider::-webkit-slider-thumb {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+
+        .interface-inactive .temp-slider::-moz-range-thumb {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+
+        .dev-menu {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            max-width: 300px;
+            z-index: 1000;
+            display: none;
+        }
+
+        .dev-menu h3 {
+            margin: 0 0 15px 0;
+            color: #333;
+            font-size: 1.2em;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .dev-menu .dev-button {
+            display: block;
+            width: 100%;
+            margin: 8px 0;
+            padding: 10px 15px;
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .dev-menu .dev-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+        }
+
+        .dev-menu .dev-button.danger {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        }
+
+        .dev-menu .dev-button.danger:hover {
+            box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+        }
+
+        .dev-menu .dev-button.warning {
+            background: linear-gradient(135deg, #fd7e14 0%, #e55a00 100%);
+        }
+
+        .dev-menu .dev-button.warning:hover {
+            box-shadow: 0 4px 15px rgba(253, 126, 20, 0.3);
+        }
+
+        .dev-menu .temp-simulator {
+            margin: 15px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+
+        .dev-menu .temp-simulator label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+            font-size: 0.9em;
+        }
+
+        .dev-menu .temp-control-sim {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .dev-menu .temp-slider-sim {
+            flex: 1;
+            height: 6px;
+            border-radius: 3px;
+            background: #ddd;
+            outline: none;
+            appearance: none;
+            -webkit-appearance: none;
+        }
+
+        .dev-menu .temp-slider-sim::-webkit-slider-thumb {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #28a745;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .dev-menu .temp-slider-sim::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #28a745;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .dev-menu .temp-value-sim {
+            font-size: 1em;
+            font-weight: 600;
+            color: #333;
+            min-width: 50px;
+        }
+
+        .dev-toggle {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 1.2em;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            transition: all 0.3s ease;
+            z-index: 1001;
+        }
+
+        .dev-toggle:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
         @media (max-width: 600px) {
             .container {
                 padding: 20px;
@@ -258,6 +427,60 @@
     </style>
 </head>
 <body>
+    <!-- Menu de développement -->
+    <button class="dev-toggle" id="devToggle" onclick="toggleDevMenu()" title="Menu de développement">
+        🔧
+    </button>
+    
+    <div class="dev-menu" id="devMenu">
+        <h3>🧪 Mode Développement</h3>
+        
+        <div class="temp-simulator">
+            <label>🌡️ Simulation Température</label>
+            <div class="temp-control-sim">
+                <input type="range" 
+                       class="temp-slider-sim" 
+                       id="tempSimSlider" 
+                       min="0" 
+                       max="30" 
+                       step="0.5" 
+                       value="22">
+                <span class="temp-value-sim" id="tempSimValue">22.0°C</span>
+            </div>
+            <button class="dev-button" onclick="applySimulatedTemp()" style="margin-top: 8px; font-size: 0.8em;">
+                Appliquer
+            </button>
+        </div>
+        
+        <button class="dev-button" onclick="simulateState('OFF', 22.0, 22.0, false)">
+            🔴 Poêle Éteint
+        </button>
+        <button class="dev-button warning" onclick="simulateState('STARTING', 22.0, 25.0, true)">
+            🟡 Démarrage
+        </button>
+        <button class="dev-button" onclick="simulateState('BURNING', 24.5, 25.0, true)">
+            🔥 En Chauffage
+        </button>
+        <button class="dev-button" onclick="simulateState('COOLING', 23.0, 22.0, false)">
+            ❄️ Refroidissement
+        </button>
+        <button class="dev-button danger" onclick="simulateDisconnect()">
+            ❌ Simuler Déconnexion
+        </button>
+        <button class="dev-button" onclick="simulateReconnect()">
+            ✅ Simuler Reconnexion
+        </button>
+        <button class="dev-button danger" onclick="simulateError('E101: Allumage raté')">
+            🔥 Simuler E101
+        </button>
+        <button class="dev-button danger" onclick="simulateError('E108: Porte ouverte')">
+            🚪 Simuler E108
+        </button>
+        <button class="dev-button" onclick="clearError()">
+            ✅ Effacer Erreur
+        </button>
+    </div>
+
     <div class="connection-status" id="connectionStatus">
         <span id="connectionText">Connexion...</span>
     </div>
@@ -279,6 +502,9 @@
             <div style="color: #666; font-size: 0.9em;">
                 Consigne: <span id="setpointTemp">22.0</span>°C
             </div>
+            <div id="errorDisplay" style="display: none; color: #dc3545; font-size: 0.9em; margin-top: 10px; padding: 8px; background: #fff5f5; border-radius: 5px; border-left: 3px solid #dc3545;">
+                <strong>⚠️ Erreur:</strong> <span id="errorMessage">Aucune erreur</span>
+            </div>
         </div>
 
         <div class="controls">
@@ -289,7 +515,7 @@
                            class="temp-slider" 
                            id="tempSlider" 
                            min="15" 
-                           max="35" 
+                           max="27" 
                            step="0.5" 
                            value="22">
                     <span class="temp-value" id="tempValue">22.0°C</span>
@@ -329,15 +555,26 @@
         const setTempBtn = document.getElementById('setTempBtn');
         const powerOnBtn = document.getElementById('powerOnBtn');
         const powerOffBtn = document.getElementById('powerOffBtn');
+        const errorDisplay = document.getElementById('errorDisplay');
+        const errorMessage = document.getElementById('errorMessage');
 
         // État actuel
         let currentState = {
             connected: false,
+            synchronized: false,
             status: 'OFF',
             power: false,
             temperature: 22.0,
-            setpoint: 22.0
+            setpoint: 22.0,
+            error_code: 0,
+            error_message: 'Aucune erreur'
         };
+
+        // État du mode développement
+        let devMode = false;
+        let devMenuVisible = false;
+        let tempSimSlider = null;
+        let tempSimValue = null;
 
         // Gestion de la connexion WebSocket
         socket.on('connect', function() {
@@ -351,6 +588,7 @@
         });
 
         socket.on('state_update', function(state) {
+            console.log('Mise à jour d\'état reçue via WebSocket:', state);
             updateState(state);
         });
 
@@ -363,12 +601,21 @@
             } else {
                 connectionStatus.className = 'connection-status disconnected';
                 connectionText.textContent = 'Déconnecté';
+                // Réinitialiser la synchronisation si déconnecté
+                currentState.synchronized = false;
             }
+            updateInterfaceState();
         }
 
         // Mise à jour de l'état du poêle
         function updateState(state) {
+            console.log('updateState appelée avec:', state);
             currentState = state;
+            
+            // Marquer comme synchronisé si on reçoit des données valides
+            if (state.connected && state.temperature !== undefined && state.setpoint !== undefined) {
+                currentState.synchronized = true;
+            }
             
             // Mise à jour du statut
             statusValue.textContent = state.status;
@@ -389,6 +636,15 @@
             
             // Mise à jour du bouton "Définir"
             updateSetTempButton();
+            
+            // Mise à jour de l'affichage des erreurs
+            updateErrorDisplay();
+            
+            // Mise à jour du slider de simulation
+            updateSimulationSlider();
+            
+            // Mise à jour de l'état de l'interface
+            updateInterfaceState();
         }
 
         // Mise à jour des boutons de contrôle
@@ -414,6 +670,55 @@
             }
         }
 
+        // Mise à jour de l'affichage des erreurs
+        function updateErrorDisplay() {
+            if (currentState.error_code && currentState.error_code !== 0) {
+                errorMessage.textContent = currentState.error_message;
+                errorDisplay.style.display = 'block';
+            } else {
+                errorDisplay.style.display = 'none';
+            }
+        }
+
+        // Mise à jour du slider de simulation
+        function updateSimulationSlider() {
+            if (tempSimSlider && tempSimValue) {
+                tempSimSlider.value = currentState.temperature;
+                tempSimValue.textContent = currentState.temperature.toFixed(1) + '°C';
+            }
+        }
+
+        // Mise à jour de l'état de l'interface
+        function updateInterfaceState() {
+            const isReady = currentState.connected && currentState.synchronized;
+            const container = document.querySelector('.container');
+            
+            // Désactiver/activer tous les contrôles
+            tempSlider.disabled = !isReady;
+            setTempBtn.disabled = !isReady || setTempBtn.disabled;
+            powerOnBtn.disabled = !isReady || powerOnBtn.disabled;
+            powerOffBtn.disabled = !isReady || powerOffBtn.disabled;
+            
+            // Appliquer le style d'inactivité
+            if (isReady) {
+                container.classList.remove('interface-inactive');
+            } else {
+                container.classList.add('interface-inactive');
+            }
+            
+            // Mettre à jour le statut de connexion
+            if (currentState.connected && currentState.synchronized) {
+                connectionText.textContent = 'Synchronisé';
+                connectionStatus.className = 'connection-status connected';
+            } else if (currentState.connected && !currentState.synchronized) {
+                connectionText.textContent = 'En attente de sync...';
+                connectionStatus.className = 'connection-status disconnected';
+            } else {
+                connectionText.textContent = 'Déconnecté';
+                connectionStatus.className = 'connection-status disconnected';
+            }
+        }
+
         // Gestion du slider de température
         tempSlider.addEventListener('input', function() {
             const value = parseFloat(this.value);
@@ -425,8 +730,8 @@
         function setTemperature() {
             const temperature = parseFloat(tempSlider.value);
             
-            if (temperature < 15 || temperature > 35) {
-                alert('La température doit être entre 15°C et 35°C');
+            if (temperature < 15 || temperature > 27) {
+                alert('La température doit être entre 15°C et 27°C');
                 return;
             }
 
@@ -494,6 +799,131 @@
             }
         }
 
+        // Fonctions de simulation (mode développement)
+        function toggleDevMenu() {
+            devMenuVisible = !devMenuVisible;
+            const devMenu = document.getElementById('devMenu');
+            const devToggle = document.getElementById('devToggle');
+            
+            if (devMenuVisible) {
+                devMenu.style.display = 'block';
+                devToggle.style.background = '#28a745';
+            } else {
+                devMenu.style.display = 'none';
+                devToggle.style.background = '#667eea';
+            }
+        }
+
+        function simulateState(status, temperature, setpoint, power) {
+            console.log('Simulation demandée:', { status, temperature, setpoint, power });
+            
+            fetch('/api/simulate_state', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    status: status,
+                    temperature: temperature,
+                    setpoint: setpoint,
+                    power: power
+                })
+            })
+            .then(response => {
+                console.log('Réponse reçue:', response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log('Données reçues:', data);
+                if (data.success) {
+                    console.log('État simulé avec succès:', data.message);
+                    // Mettre à jour l'état local immédiatement
+                    currentState.status = status;
+                    currentState.temperature = temperature;
+                    currentState.setpoint = setpoint;
+                    currentState.power = power;
+                    updateState(currentState);
+                } else {
+                    console.error('Erreur simulation:', data.message);
+                    alert('Erreur de simulation: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Erreur fetch:', error);
+                alert('Erreur de communication: ' + error.message);
+            });
+        }
+
+        function simulateDisconnect() {
+            currentState.connected = false;
+            currentState.synchronized = false;
+            updateConnectionStatus(false);
+            updateInterfaceState();
+        }
+
+        function simulateReconnect() {
+            currentState.connected = true;
+            currentState.synchronized = true;
+            updateConnectionStatus(true);
+            updateInterfaceState();
+        }
+
+        function simulateError(errorMessage) {
+            currentState.error_code = 101; // Code d'erreur simulé
+            currentState.error_message = errorMessage;
+            updateErrorDisplay();
+        }
+
+        function clearError() {
+            currentState.error_code = 0;
+            currentState.error_message = 'Aucune erreur';
+            updateErrorDisplay();
+        }
+
+        function applySimulatedTemp() {
+            if (!tempSimSlider) return;
+            
+            const simulatedTemp = parseFloat(tempSimSlider.value);
+            const currentSetpoint = currentState.setpoint;
+            
+            // Simuler l'état avec la température choisie
+            simulateState(currentState.status, simulatedTemp, currentSetpoint, currentState.power);
+        }
+
+        // Vérifier le mode développement
+        function checkDevMode() {
+            fetch('/api/dev_mode')
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Mode développement:', data.dev_mode);
+                    devMode = data.dev_mode;
+                    const devToggle = document.getElementById('devToggle');
+                    if (devMode) {
+                        devToggle.style.display = 'block';
+                        // Initialiser les éléments du slider de simulation
+                        tempSimSlider = document.getElementById('tempSimSlider');
+                        tempSimValue = document.getElementById('tempSimValue');
+                        
+                        // Gestionnaire d'événement pour le slider
+                        if (tempSimSlider) {
+                            tempSimSlider.addEventListener('input', function() {
+                                const value = parseFloat(this.value);
+                                tempSimValue.textContent = value.toFixed(1) + '°C';
+                            });
+                        }
+                    } else {
+                        devToggle.style.display = 'none';
+                    }
+                })
+                .catch(error => {
+                    console.error('Erreur vérification mode dev:', error);
+                });
+        }
+
+        // Initialisation de l'interface
+        updateInterfaceState();
+        checkDevMode();
+
         // Chargement initial de l'état
         fetch('/api/state')
             .then(response => response.json())
@@ -502,6 +932,7 @@
             })
             .catch(error => {
                 console.error('Erreur lors du chargement initial:', error);
+                updateInterfaceState();
             });
     </script>
 </body>

@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# Script de développement pour Linux/macOS
-# Lance l'application en mode développement avec mock série
+# Script de développement avec debug activé
+# Lance l'application en mode développement avec logs détaillés
 
-echo "🔥 Démarrage du contrôleur Palazzetti en mode développement"
-echo "=========================================================="
+echo "🔧 Démarrage du contrôleur Palazzetti en mode développement avec DEBUG"
+echo "=================================================================="
 
 # Vérifier que Python est installé
 if ! command -v python3 &> /dev/null; then
@@ -26,14 +26,12 @@ source venv/bin/activate
 echo "📦 Vérification des dépendances..."
 pip install -r requirements.txt --quiet
 
-# Lancer l'application en mode développement
+# Lancer l'application en mode développement avec debug
 echo "🚀 Lancement de l'application..."
-echo "   - Mode: Développement (mock série)"
+echo "   - Mode: Développement (mock) avec logs DEBUG"
 echo "   - Interface: http://localhost:5000"
 echo "   - Arrêt: Ctrl+C"
 echo ""
-pwd
-ls -l
-python palazzeti_controller.py --dev
 
-
+# Définir DEBUG=True et LOG_LEVEL=DEBUG
+DEBUG=True LOG_LEVEL=DEBUG python palazzeti_controller.py
