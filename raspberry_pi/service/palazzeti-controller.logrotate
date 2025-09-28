@@ -1,0 +1,30 @@
+# Configuration de rotation des logs pour Palazzeti Controller
+# À placer dans /etc/logrotate.d/palazzeti-controller
+
+/var/log/palazzeti-controller/*.log {
+    daily
+    missingok
+    rotate 7
+    compress
+    delaycompress
+    notifempty
+    create 644 pi pi
+    postrotate
+        # Recharger systemd pour que les nouveaux logs soient pris en compte
+        systemctl reload palazzeti-controller > /dev/null 2>&1 || true
+    endscript
+}
+
+# Rotation des logs systemd pour le service
+/var/log/journal/*/system@*.journal {
+    weekly
+    rotate 4
+    compress
+    delaycompress
+    missingok
+    notifempty
+    create 640 root systemd-journal
+    postrotate
+        systemctl kill --kill-who=main --signal=SIGUSR1 systemd-journald > /dev/null 2>&1 || true
+    endscript
+}

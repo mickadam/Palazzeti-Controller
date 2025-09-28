@@ -90,6 +90,95 @@ python palazzetti_controller.py
 dev-serial.cmd
 ```
 
+## 🚀 Installation en tant que service (Raspberry Pi)
+
+Pour lancer automatiquement le contrôleur au démarrage du Raspberry Pi :
+
+### 1. Installation du service
+```bash
+# Se placer dans le répertoire du service
+cd /home/pi/Palazzeti-Controller/raspberry_pi/service
+
+# Rendre le script d'installation exécutable
+chmod +x install.sh
+
+# Installer le service (nécessite sudo)
+sudo ./install.sh
+```
+
+### 2. Gestion du service
+```bash
+# Voir le statut du service
+sudo systemctl status palazzeti-controller
+
+# Démarrer le service
+sudo systemctl start palazzeti-controller
+
+# Arrêter le service
+sudo systemctl stop palazzeti-controller
+
+# Redémarrer le service
+sudo systemctl restart palazzeti-controller
+
+# Voir les logs en temps réel
+sudo journalctl -u palazzeti-controller -f
+
+# Voir les logs récents
+sudo journalctl -u palazzeti-controller --since "1 hour ago"
+```
+
+### 3. Désinstallation du service
+```bash
+# Se placer dans le répertoire du service
+cd /home/pi/Palazzeti-Controller/raspberry_pi/service
+
+# Rendre le script de désinstallation exécutable
+chmod +x uninstall.sh
+
+# Désinstaller le service
+sudo ./uninstall.sh
+```
+
+### 4. Configuration du service
+
+Le service est configuré pour :
+- **Démarrage automatique** au boot du système
+- **Redémarrage automatique** en cas de crash
+- **Logs centralisés** via journald
+- **Permissions série** (groupe dialout)
+- **Sécurité** (isolation des processus)
+
+### 5. Accès à l'interface
+
+Une fois le service installé et démarré, l'interface web est accessible sur :
+- **URL locale** : http://localhost:5000
+- **URL réseau** : http://[IP_DU_RASPBERRY]:5000
+
+Pour trouver l'IP de votre Raspberry Pi :
+```bash
+hostname -I
+```
+
+## 📁 Structure du projet
+
+```
+Palazzeti-Controller/
+├── raspberry_pi/                 # Code principal
+│   ├── palazzeti_controller.py   # Application principale
+│   ├── frame.py                  # Gestion des trames
+│   ├── config.py                 # Configuration
+│   ├── templates/                # Templates web
+│   ├── service/                  # Scripts de service
+│   │   ├── install.sh            # Installation du service
+│   │   ├── uninstall.sh          # Désinstallation du service
+│   │   ├── palazzeti-controller.service
+│   │   ├── palazzeti-controller.logrotate
+│   │   └── README.md             # Documentation du service
+│   └── requirements.txt          # Dépendances Python
+├── docs/                         # Documentation
+└── tests/                        # Tests et scripts de debug
+```
+
 ### Tests de communication
 ```bash
 # Activer l'environnement virtuel d'abord
