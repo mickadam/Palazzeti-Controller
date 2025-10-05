@@ -120,7 +120,7 @@ if [ ! -f "$SERVICE_FILE" ] && ! systemctl list-unit-files | grep -q $SERVICE_NA
     log_info "Le contrôleur Palazzeti peut toujours être lancé manuellement :"
     echo "  cd /opt/palazzeti-controller"
     echo "  source venv/bin/activate"
-    echo "  python palazzeti_controller.py"
+    echo "  python app.py"
 else
     log_error "Erreur lors de la désinstallation du service"
     exit 1

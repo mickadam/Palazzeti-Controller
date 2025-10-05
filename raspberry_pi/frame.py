@@ -146,52 +146,31 @@ def parse_temperature(data):
     return temperature
 
 
-def parse_setpoint(data, fluid_type=0):
+def parse_setpoint(data):
     """
     Parser la température de consigne avec seuil de déclenchement
+    Pour granulés (type 0)
     
     Args:
-        data: Liste des bytes de données (8 bytes pour fluide < 2, 2 bytes pour fluide = 2)
-        fluid_type: Type de fluide (0, 1, ou 2)
+        data: Liste des bytes de données (8 bytes)
     
     Returns:
-        tuple: (setpoint, seco, beco) où:
+        tuple: (setpoint, seco) où:
             - setpoint: Température de consigne en °C
             - seco: Seuil de déclenchement (trigger) pour arrêt/démarrage automatique
-            - beco: Booléen BECO
     """
-    if fluid_type < 2:
-        # Fluide < 2: lecture de 8 octets
-        if len(data) < 8:
-            return 0.0, 0, False
-        
-        seco = data[0]  # Premier octet = seuil de déclenchement (trigger)
-        setpoint_raw = data[1]  # Deuxième octet = consigne brute
-        beco = data[3] > 0  # 4ème octet > 0 = true
-        
-        if fluid_type == 0:
-            # Fluide = 0: conversion en décimal
-            seco = seco / 10.0  # Seuil de déclenchement en °C
-            setpoint = setpoint_raw / 5.0
-        else:
-            # Fluide = 1: pas de conversion
-            setpoint = float(setpoint_raw)
-        
-        return setpoint, seco, beco
+    # Lecture de 8 octets pour granulés (type 0)
+    if len(data) < 8:
+        return 0.0, 0
     
-    elif fluid_type == 2:
-        # Fluide = 2: lecture de 2 octets
-        if len(data) < 2:
-            return 0.0, 0, False
-        
-        # 2 octets en little-endian
-        setpoint_raw = data[0] | (data[1] << 8)
-        setpoint = float(setpoint_raw)  # Conversion en int16_t
-        
-        return setpoint, 0, False
+    seco = data[0]  # Premier octet = seuil de déclenchement (trigger)
+    setpoint_raw = data[1]  # Deuxième octet = consigne brute
     
-    else:
-        return 0.0, 0, False
+    # Conversion en décimal pour granulés (type 0)
+    seco = seco / 10.0  # Seuil de déclenchement en °C
+    setpoint = setpoint_raw / 5.0
+    
+    return setpoint, seco
 
 
 def parse_status(data):

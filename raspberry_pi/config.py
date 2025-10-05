@@ -11,7 +11,7 @@ TIMEOUT = int(os.getenv('TIMEOUT', '10'))
 # Configuration Flask
 HOST = os.getenv('HOST', '0.0.0.0')
 PORT = int(os.getenv('PORT', '5000'))
-DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'  # Mode dev activé par défaut
+DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'  # Mode debug désactivé par défaut
 
 # Configuration du poêle
 DEFAULT_TEMPERATURE = 22.0

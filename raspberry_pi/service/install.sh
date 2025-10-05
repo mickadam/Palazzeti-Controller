@@ -145,7 +145,9 @@ log_info "📋 Copie des fichiers de l'application..."
 cd $SOURCE_DIR
 
 # Fichiers Python essentiels
-cp palazzeti_controller.py $INSTALL_DIR/
+cp app.py $INSTALL_DIR/
+cp palazzetti_controller.py $INSTALL_DIR/
+cp serial_communicator.py $INSTALL_DIR/
 cp frame.py $INSTALL_DIR/
 cp config.py $INSTALL_DIR/
 cp requirements.txt $INSTALL_DIR/
