@@ -221,3 +221,33 @@ Le script de lancement est maintenant **plus générique et clair** :
 - **Terminologie simplifiée** : plus de référence au mode "production"
 - **Usage universel** : un seul script pour tous les cas d'usage
 - **Documentation mise à jour** pour refléter les changements
+
+---
+
+## Version actuelle - Correction de la logique de synchronisation
+
+### 🔧 **Corrigé :**
+
+#### Logique de synchronisation manquante
+- ❌ **Problème** : Le champ `synchronized` était manquant dans le back-end
+- ❌ **Problème** : Le front-end utilisait `currentState.synchronized` mais le back-end ne le fournissait pas
+- ✅ **Solution** : Ajout du champ `synchronized` dans l'état du contrôleur
+
+#### Logique de synchronisation intelligente
+- ✅ **Connexion établie** → `connected: true, synchronized: false`
+- ✅ **Lecture d'état réussie** → `synchronized: true` (si au moins 2/3 lectures principales réussissent)
+- ✅ **Connexion échouée** → `connected: false, synchronized: false`
+
+#### Critères de synchronisation
+- ✅ **Compteurs de lectures** : `successful_reads` et `total_reads`
+- ✅ **Seuil de synchronisation** : Au moins 2 lectures réussies sur 3 principales
+- ✅ **Lectures principales** : Statut, température, consigne
+- ✅ **Logs détaillés** : Affichage du statut de synchronisation
+
+### 🎯 **Résultat :**
+
+La logique de connexion/synchronisation est maintenant **cohérente** :
+- **Front-end et back-end synchronisés** : Le champ `synchronized` est maintenant fourni
+- **Logique intelligente** : Distinction entre connexion et synchronisation
+- **Interface utilisateur** : Affichage correct des états "Déconnecté", "En attente de sync...", "Synchronisé"
+- **Contrôles désactivés** : Les boutons sont désactivés tant que `connected && synchronized` n'est pas vrai

@@ -21,6 +21,7 @@ class PalazzettiController:
         self.state_cache_duration = 10  # Durée du cache en secondes
         self.state = {
             'connected': False,
+            'synchronized': False,
             'status': 'OFF',
             'power': False,
             'temperature': DEFAULT_TEMPERATURE,
@@ -52,12 +53,19 @@ class PalazzettiController:
             
         success = self.communicator.connect(port, baudrate, timeout)
         self.state['connected'] = success
+        if success:
+            # Connexion établie, mais pas encore synchronisé
+            self.state['synchronized'] = False
+        else:
+            # Connexion échouée
+            self.state['synchronized'] = False
         return success
     
     def disconnect(self):
         """Fermer la connexion au poêle"""
         self.communicator.disconnect()
         self.state['connected'] = False
+        self.state['synchronized'] = False
     
     def is_connected(self):
         """Vérifier si le contrôleur est connecté"""
@@ -85,37 +93,45 @@ class PalazzettiController:
     def _read_state(self):
         """Lecture interne de l'état (protégée par le sémaphore)"""
         start_time = time.time()
+        successful_reads = 0  # Compteur de lectures réussies
+        total_reads = 0       # Compteur total de lectures
         try:
             logger.info("Lecture de l'état du poêle...")
             
             # Lire le statut
             logger.debug("Lecture du registre statut...")
+            total_reads += 1
             status_frame = self.communicator.send_read_command(REGISTER_STATUS)
             if status_frame:
                 status_code, status_name, power_on = parse_status(status_frame.get_data())
                 self.state['status'] = status_name
                 self.state['power'] = power_on
+                successful_reads += 1
                 logger.debug(f"Statut lu: {status_name}, Puissance: {'ON' if power_on else 'OFF'}")
             else:
                 logger.warning("Échec de lecture du registre statut")
             
             # Lire la température actuelle
             logger.debug("Lecture du registre température...")
+            total_reads += 1
             temp_frame = self.communicator.send_read_command(REGISTER_TEMPERATURE)
             if temp_frame:
                 temperature = parse_temperature(temp_frame.get_data())
                 self.state['temperature'] = temperature
+                successful_reads += 1
                 logger.debug(f"Température lue: {temperature}°C")
             else:
                 logger.warning("Échec de lecture du registre température")
             
             # Lire la température de consigne avec fluide type 0 (granulés)
             logger.debug("Lecture du registre consigne...")
+            total_reads += 1
             setpoint_result = self.get_setpoint()
             if setpoint_result:
                 setpoint, seco = setpoint_result
                 self.state['setpoint'] = setpoint
                 self.state['seco'] = seco
+                successful_reads += 1
                 logger.debug(f"Consigne lue: {setpoint}°C, Seuil: {seco}°C")
             else:
                 logger.warning("Échec de lecture du registre consigne")
@@ -174,6 +190,7 @@ class PalazzettiController:
         # Logger l'état complet avec le temps de lecture
         logger.info("=== État du poêle ===")
         logger.info(f"Connexion: {'✓ Connecté' if self.state['connected'] else '✗ Déconnecté'}")
+        logger.info(f"Synchronisation: {'✓ Synchronisé' if self.state['synchronized'] else '✗ Non synchronisé'}")
         logger.info(f"Statut: {self.state.get('status', 'N/A')}")
         logger.info(f"Température: {self.state.get('temperature', 'N/A')}°C")
         logger.info(f"Consigne: {self.state.get('setpoint', 'N/A')}°C")
@@ -186,6 +203,15 @@ class PalazzettiController:
         logger.info(f"Seuil déclenchement: {self.state.get('seco', 'N/A')}°C")
         logger.info(f"⏱️  Temps de lecture: {read_duration:.3f}s")
         logger.info("==================")
+        
+        # Déterminer si on est synchronisé basé sur le succès des lectures
+        # On considère synchronisé si au moins 2 des 3 lectures principales ont réussi
+        if total_reads >= 3 and successful_reads >= 2:
+            self.state['synchronized'] = True
+            logger.info(f"✅ Synchronisation réussie ({successful_reads}/{total_reads} lectures)")
+        else:
+            self.state['synchronized'] = False
+            logger.warning(f"❌ Synchronisation échouée ({successful_reads}/{total_reads} lectures)")
             
         return self.state
     
