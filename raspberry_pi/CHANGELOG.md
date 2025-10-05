@@ -175,3 +175,49 @@ Les services sont maintenant **synchronisés** avec la nouvelle structure :
 - **Scripts d'installation** copient tous les fichiers nécessaires
 - **Documentation** mise à jour pour refléter les changements
 - **Installation/désinstallation** fonctionne avec la nouvelle architecture
+
+---
+
+## Version actuelle - Nettoyage des scripts de lancement
+
+### 🗑️ **Supprimé :**
+
+#### Scripts de développement obsolètes
+- ❌ `dev.sh` - Script de développement avec mode mock (plus nécessaire)
+- ❌ `dev_debug.sh` - Script de développement avec debug (plus nécessaire)
+
+### 🔄 **Mis à jour :**
+
+#### Script de production (`prod.sh`)
+- ❌ `python palazzeti_controller.py` → ✅ `python app.py`
+- ❌ `LOG_LEVEL=DEBUG` → ✅ `LOG_LEVEL=INFO` (plus approprié pour la production)
+
+### 🎯 **Résultat :**
+
+Les scripts de lancement sont maintenant **simplifiés et cohérents** :
+- **Un seul script** : `launch.sh` pour le lancement de l'application
+- **Plus de confusion** entre modes dev/prod (un seul mode maintenant)
+- **Scripts obsolètes supprimés** (dev.sh, dev_debug.sh)
+- **Configuration optimisée** (LOG_LEVEL=INFO)
+
+---
+
+## Version actuelle - Renommage du script de lancement
+
+### 🔄 **Renommé :**
+
+#### Script de lancement
+- ❌ `prod.sh` → ✅ `launch.sh`
+
+#### Mise à jour du contenu
+- ❌ "Script de production" → ✅ "Script de lancement"
+- ❌ "Mode: Production" → ✅ "Mode: Communication série réelle"
+- ❌ "Définir DEBUG=False pour forcer le mode production" → ✅ "Configuration de l'environnement"
+
+### 🎯 **Résultat :**
+
+Le script de lancement est maintenant **plus générique et clair** :
+- **Nom plus approprié** : `launch.sh` au lieu de `prod.sh`
+- **Terminologie simplifiée** : plus de référence au mode "production"
+- **Usage universel** : un seul script pour tous les cas d'usage
+- **Documentation mise à jour** pour refléter les changements
