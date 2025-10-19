@@ -73,6 +73,14 @@ class PalazzettiController:
     
     def get_state(self):
         """Obtenir l'état complet du poêle"""
+        # Vérifier d'abord si la connexion série est toujours active
+        if not self.communicator.is_connected():
+            logger.warning("Connexion série perdue - retour d'état déconnecté")
+            self.state['connected'] = False
+            self.state['synchronized'] = False
+            self.state['error_message'] = 'Connexion série perdue - vérifiez le câble'
+            return self.state
+        
         if not self.state['connected']:
             return self.state
         
@@ -95,6 +103,15 @@ class PalazzettiController:
         start_time = time.time()
         successful_reads = 0  # Compteur de lectures réussies
         total_reads = 0       # Compteur total de lectures
+        
+        # Vérifier d'abord si la connexion est toujours active
+        if not self.communicator.is_connected():
+            logger.error("Connexion série perdue - câble peut-être déconnecté")
+            self.state['connected'] = False
+            self.state['synchronized'] = False
+            self.state['error_message'] = 'Connexion série perdue - vérifiez le câble'
+            return self.state
+        
         try:
             logger.info("Lecture de l'état du poêle...")
             
@@ -274,15 +291,20 @@ class PalazzettiController:
             
             # Envoyer la commande d'écriture
             response = self.communicator.send_write_command(REGISTER_SETPOINT, value_bytes)
+            
+            # Mettre à jour l'état local même si la réponse n'est pas parfaite
+            # car la commande peut avoir été envoyée avec succès
+            self.state['setpoint'] = temperature
+            
             if response:
-                self.state['setpoint'] = temperature
+                logger.info(f"Température de consigne définie à {temperature}°C (réponse reçue)")
                 # Forcer un refresh de l'état après modification
                 self.force_state_refresh()
-                logger.info(f"Température de consigne définie à {temperature}°C")
                 return True
             else:
-                logger.error("Échec de la définition de la température")
-                return False
+                logger.warning(f"Température de consigne définie à {temperature}°C (pas de réponse confirmée)")
+                # Ne pas forcer le refresh si pas de réponse, mais considérer comme succès
+                return True
                 
         except Exception as e:
             logger.error(f"Erreur lors de la définition de la température: {e}")
@@ -320,26 +342,16 @@ class PalazzettiController:
             return False
     
     def start_monitoring(self):
-        """Démarrer la surveillance en arrière-plan"""
-        if self.running:
-            return
-            
-        self.running = True
-        self.monitor_thread = threading.Thread(target=self._monitor_loop, daemon=True)
-        self.monitor_thread.start()
-        logger.info("Surveillance démarrée")
+        """Démarrer la surveillance en arrière-plan - DÉSACTIVÉE pour l'instant"""
+        # Surveillance périodique désactivée - lecture uniquement à la demande
+        logger.info("Surveillance périodique désactivée - lecture uniquement à la demande")
+        return
     
     def stop_monitoring(self):
-        """Arrêter la surveillance"""
-        if self.running:
-            self.running = False
-            logger.info("Surveillance arrêtée")
-            
-            # Attendre que le thread de surveillance se termine
-            if hasattr(self, 'monitor_thread') and self.monitor_thread.is_alive():
-                self.monitor_thread.join(timeout=2)
-                if self.monitor_thread.is_alive():
-                    logger.warning("Thread de surveillance n'a pas pu s'arrêter proprement")
+        """Arrêter la surveillance - DÉSACTIVÉE pour l'instant"""
+        # Surveillance périodique désactivée
+        logger.info("Surveillance périodique désactivée")
+        return
     
     def _monitor_loop(self):
         """Boucle de surveillance en arrière-plan"""
@@ -355,7 +367,7 @@ class PalazzettiController:
             except Exception as e:
                 logger.error(f"Erreur dans la boucle de surveillance: {e}")
                 
-            time.sleep(10)  # Mise à jour toutes les 10 secondes
+            time.sleep(60)  # Mise à jour toutes les 10 secondes
     
     def set_websocket_callback(self, callback):
         """

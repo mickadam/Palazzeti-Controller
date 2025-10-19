@@ -5,7 +5,6 @@ import time
 import threading
 import logging
 from flask import Flask, render_template, request, jsonify
-from flask_socketio import SocketIO, emit
 from config import *
 from palazzetti_controller import PalazzettiController
 
@@ -25,7 +24,6 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'palazzetti_secret'
-socketio = SocketIO(app, cors_allowed_origins="*")
 
 # Instance globale du contrôleur (sera initialisée dans main())
 controller = None
@@ -39,48 +37,168 @@ def index():
 
 @app.route('/api/state')
 def api_state():
-    """API pour obtenir l'état du poêle"""
+    """API pour obtenir l'état du poêle avec vérification de connexion"""
     if controller is None:
         return jsonify({'error': 'Contrôleur non initialisé'}), 500
-    return jsonify(controller.get_state())
+    
+    # Vérifier d'abord si la connexion est toujours active
+    if not controller.is_connected():
+        logger.warning("Connexion série perdue - retour d'état par défaut")
+        default_state = {
+            'connected': False,
+            'synchronized': False,
+            'status': 'OFF',
+            'power': False,
+            'temperature': '--',
+            'setpoint': '--',
+            'night_mode': False,
+            'error_code': 0,
+            'error_message': 'Connexion série perdue - vérifiez le câble',
+            'seco': 0,
+            'power_level': 0,
+            'alarm_status': 0,
+            'timer_enabled': False
+        }
+        return jsonify(default_state)
+    
+    # Si connecté, tenter de lire l'état (avec test de communication)
+    try:
+        state = controller.get_state()
+        # Vérifier que l'état contient des données valides (pas de cache)
+        if state.get('connected', False) and state.get('synchronized', False):
+            logger.info("État lu avec succès depuis le poêle")
+            return jsonify(state)
+        else:
+            logger.warning("État non synchronisé - retour d'état par défaut")
+            default_state = {
+                'connected': False,
+                'synchronized': False,
+                'status': 'OFF',
+                'power': False,
+                'temperature': '--',
+                'setpoint': '--',
+                'night_mode': False,
+                'error_code': 0,
+                'error_message': 'Connexion série perdue - vérifiez le câble',
+                'seco': 0,
+                'power_level': 0,
+                'alarm_status': 0,
+                'timer_enabled': False
+            }
+            return jsonify(default_state)
+    except Exception as e:
+        logger.error(f"Erreur lors de la lecture de l'état: {e}")
+        default_state = {
+            'connected': False,
+            'synchronized': False,
+            'status': 'OFF',
+            'power': False,
+            'temperature': '--',
+            'setpoint': '--',
+            'night_mode': False,
+            'error_code': 0,
+            'error_message': f'Erreur de communication: {str(e)}',
+            'seco': 0,
+            'power_level': 0,
+            'alarm_status': 0,
+            'timer_enabled': False
+        }
+        return jsonify(default_state)
 
+
+@app.route('/api/refresh_state', methods=['POST'])
+def api_refresh_state():
+    """API pour forcer le rafraîchissement de l'état du poêle avec tentative de reconnexion"""
+    if controller is None:
+        return jsonify({'error': 'Contrôleur non initialisé'}), 500
+    
+    # Si le contrôleur n'est pas connecté, tenter de se reconnecter
+    if not controller.is_connected():
+        logger.info("Tentative de reconnexion automatique...")
+        if controller.connect():
+            logger.info("Reconnexion automatique réussie")
+            # WebSocket supprimé - plus de temps réel
+            # Démarrer la surveillance si pas déjà fait
+            controller.start_monitoring()
+        else:
+            logger.warning("Échec de la reconnexion automatique")
+            default_state = {
+                'connected': False,
+                'synchronized': False,
+                'status': 'OFF',
+                'power': False,
+                'temperature': '--',
+                'setpoint': '--',
+                'night_mode': False,
+                'error_code': 0,
+                'error_message': 'Connexion série perdue - vérifiez le câble',
+                'seco': 0,
+                'power_level': 0,
+                'alarm_status': 0,
+                'timer_enabled': False
+            }
+            return jsonify({
+                'success': False,
+                'state': default_state,
+                'message': 'Connexion série perdue - vérifiez le câble'
+            })
+    
+    try:
+        # Forcer la lecture de l'état (ignorer le cache)
+        state = controller.force_state_refresh()
+        return jsonify({
+            'success': True,
+            'state': state,
+            'message': 'État rafraîchi avec succès'
+        })
+    except Exception as e:
+        logger.error(f"Erreur lors du rafraîchissement de l'état: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'message': 'Erreur lors du rafraîchissement'
+        }), 500
+
+
+# Route de test de connexion supprimée - le rafraîchissement gère la reconnexion
 
 @app.route('/api/set_temperature', methods=['POST'])
 def api_set_temperature():
     """API pour définir la température"""
+    if controller is None:
+        return jsonify({'success': False, 'message': 'Contrôleur non initialisé'}), 500
+    
     data = request.get_json()
     temperature = float(data.get('temperature', DEFAULT_TEMPERATURE))
     
-    if controller.set_temperature(temperature):
-        return jsonify({'success': True, 'message': f'Température définie à {temperature}°C'})
-    else:
-        return jsonify({'success': False, 'message': 'Erreur lors de la définition de la température'}), 400
-
-
-@app.route('/api/set_power', methods=['POST'])
-def api_set_power():
-    """API pour allumer/éteindre le poêle"""
-    data = request.get_json()
-    power_on = data.get('power', False)
+    logger.info(f"Demande de définition de température: {temperature}°C")
     
-    if controller.set_power(power_on):
-        return jsonify({'success': True, 'message': f'Poêle {"allumé" if power_on else "éteint"}'})
-    else:
-        return jsonify({'success': False, 'message': 'Erreur lors du changement d\'état'}), 400
+    try:
+        if controller.set_temperature(temperature):
+            logger.info(f"Température définie avec succès: {temperature}°C")
+            return jsonify({'success': True, 'message': f'Température définie à {temperature}°C'})
+        else:
+            logger.error(f"Échec de la définition de température: {temperature}°C")
+            return jsonify({'success': False, 'message': 'Erreur lors de la définition de la température'}), 400
+    except Exception as e:
+        logger.error(f"Exception lors de la définition de température: {e}")
+        return jsonify({'success': False, 'message': f'Erreur: {str(e)}'}), 500
 
 
-@socketio.on('connect')
-def handle_connect(auth=None):
-    """Gestionnaire de connexion WebSocket"""
-    logger.info('Client connecté')
-    if controller is not None:
-        emit('state_update', controller.get_state())
+# Route temporairement désactivée - contrôle on/off non utilisé pour l'instant
+# @app.route('/api/set_power', methods=['POST'])
+# def api_set_power():
+#     """API pour allumer/éteindre le poêle"""
+#     data = request.get_json()
+#     power_on = data.get('power', False)
+#     
+#     if controller.set_power(power_on):
+#         return jsonify({'success': True, 'message': f'Poêle {"allumé" if power_on else "éteint"}'})
+#     else:
+#         return jsonify({'success': False, 'message': 'Erreur lors du changement d\'état'}), 400
 
 
-@socketio.on('disconnect')
-def handle_disconnect():
-    """Gestionnaire de déconnexion WebSocket"""
-    logger.info('Client déconnecté')
+# Gestionnaires WebSocket supprimés - plus de temps réel
 
 
 def main():
@@ -108,20 +226,17 @@ def main():
         # Créer le contrôleur
         controller = PalazzettiController()
         
-        # Se connecter
-        if not controller.connect():
-            logger.error("Impossible de se connecter au poêle")
-            return
+        # Essayer de se connecter (mais ne pas arrêter si ça échoue)
+        if controller.connect():
+            logger.info("Connexion au poêle établie")
+            # Démarrer la surveillance
+            controller.start_monitoring()
+        else:
+            logger.warning("Impossible de se connecter au poêle - interface web disponible en mode déconnecté")
         
-        # Configurer le callback WebSocket
-        controller.set_websocket_callback(lambda event, data: socketio.emit(event, data))
-        
-        # Démarrer la surveillance
-        controller.start_monitoring()
-        
-        # Démarrer le serveur web
+        # Démarrer le serveur web (toujours, même sans connexion au poêle)
         logger.info(f"Démarrage du serveur sur {HOST}:{PORT}")
-        socketio.run(app, host=HOST, port=PORT, debug=DEBUG, allow_unsafe_werkzeug=True)
+        app.run(host=HOST, port=PORT, debug=DEBUG)
         
     except KeyboardInterrupt:
         logger.info("Arrêt demandé par l'utilisateur")

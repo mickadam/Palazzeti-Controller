@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Contrôleur Palazzetti</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <!-- Socket.IO supprimé - plus de temps réel -->
     <style>
         * {
             margin: 0;
@@ -78,6 +78,75 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 15px;
+        }
+
+        .status-display {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex: 1;
+            margin: 0 15px;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-icon {
+            font-size: 1.2em;
+            width: 20px;
+            text-align: center;
+        }
+
+        .status-text {
+            font-size: 1em;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .btn-refresh {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+        }
+
+        .btn-refresh:hover {
+            background: rgba(102, 126, 234, 0.1);
+            transform: scale(1.1);
+        }
+
+        .btn-refresh:disabled {
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .btn-refresh:disabled:hover {
+            background: transparent;
+            transform: none;
+        }
+
+        .refresh-icon {
+            font-size: 1.2em;
+            transition: transform 0.3s ease;
+        }
+
+        .refresh-icon.loading {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
 
         .status-label {
@@ -214,31 +283,16 @@
             justify-content: center;
         }
 
-        .connection-status {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 10px 20px;
-            border-radius: 25px;
-            font-weight: 600;
-            font-size: 0.9em;
-        }
-
-        .connection-status.connected {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-
-        .connection-status.disconnected {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
+        /* Styles du statut de connexion supprimés */
 
         .loading {
             opacity: 0.6;
             pointer-events: none;
+        }
+
+        .btn.loading {
+            opacity: 0.7;
+            cursor: not-allowed;
         }
 
         .interface-inactive {
@@ -266,144 +320,9 @@
             cursor: not-allowed;
         }
 
-        .dev-menu {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 15px;
-            padding: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-            max-width: 300px;
-            z-index: 1000;
-            display: none;
-        }
+        /* Styles du bouton de test de connexion supprimés */
 
-        .dev-menu h3 {
-            margin: 0 0 15px 0;
-            color: #333;
-            font-size: 1.2em;
-            border-bottom: 2px solid #667eea;
-            padding-bottom: 10px;
-        }
-
-        .dev-menu .dev-button {
-            display: block;
-            width: 100%;
-            margin: 8px 0;
-            padding: 10px 15px;
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 0.9em;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .dev-menu .dev-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
-        }
-
-        .dev-menu .dev-button.danger {
-            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
-        }
-
-        .dev-menu .dev-button.danger:hover {
-            box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
-        }
-
-        .dev-menu .dev-button.warning {
-            background: linear-gradient(135deg, #fd7e14 0%, #e55a00 100%);
-        }
-
-        .dev-menu .dev-button.warning:hover {
-            box-shadow: 0 4px 15px rgba(253, 126, 20, 0.3);
-        }
-
-        .dev-menu .temp-simulator {
-            margin: 15px 0;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 8px;
-            border: 1px solid #dee2e6;
-        }
-
-        .dev-menu .temp-simulator label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #333;
-            font-size: 0.9em;
-        }
-
-        .dev-menu .temp-control-sim {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .dev-menu .temp-slider-sim {
-            flex: 1;
-            height: 6px;
-            border-radius: 3px;
-            background: #ddd;
-            outline: none;
-            appearance: none;
-            -webkit-appearance: none;
-        }
-
-        .dev-menu .temp-slider-sim::-webkit-slider-thumb {
-            appearance: none;
-            -webkit-appearance: none;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: #28a745;
-            cursor: pointer;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-        }
-
-        .dev-menu .temp-slider-sim::-moz-range-thumb {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: #28a745;
-            cursor: pointer;
-            border: none;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-        }
-
-        .dev-menu .temp-value-sim {
-            font-size: 1em;
-            font-weight: 600;
-            color: #333;
-            min-width: 50px;
-        }
-
-        .dev-toggle {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            background: #667eea;
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            font-size: 1.2em;
-            cursor: pointer;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-            transition: all 0.3s ease;
-            z-index: 1001;
-        }
-
-        .dev-toggle:hover {
-            transform: scale(1.1);
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
-        }
+        /* Styles du menu de debug supprimés */
 
         @media (max-width: 600px) {
             .container {
@@ -427,63 +346,9 @@
     </style>
 </head>
 <body>
-    <!-- Menu de développement -->
-    <button class="dev-toggle" id="devToggle" onclick="toggleDevMenu()" title="Menu de développement">
-        🔧
-    </button>
-    
-    <div class="dev-menu" id="devMenu">
-        <h3>🧪 Mode Développement</h3>
-        
-        <div class="temp-simulator">
-            <label>🌡️ Simulation Température</label>
-            <div class="temp-control-sim">
-                <input type="range" 
-                       class="temp-slider-sim" 
-                       id="tempSimSlider" 
-                       min="0" 
-                       max="30" 
-                       step="0.5" 
-                       value="22">
-                <span class="temp-value-sim" id="tempSimValue">22.0°C</span>
-            </div>
-            <button class="dev-button" onclick="applySimulatedTemp()" style="margin-top: 8px; font-size: 0.8em;">
-                Appliquer
-            </button>
-        </div>
-        
-        <button class="dev-button" onclick="simulateState('OFF', 22.0, 22.0, false)">
-            🔴 Poêle Éteint
-        </button>
-        <button class="dev-button warning" onclick="simulateState('STARTING', 22.0, 25.0, true)">
-            🟡 Démarrage
-        </button>
-        <button class="dev-button" onclick="simulateState('BURNING', 24.5, 25.0, true)">
-            🔥 En Chauffage
-        </button>
-        <button class="dev-button" onclick="simulateState('COOLING', 23.0, 22.0, false)">
-            ❄️ Refroidissement
-        </button>
-        <button class="dev-button danger" onclick="simulateDisconnect()">
-            ❌ Simuler Déconnexion
-        </button>
-        <button class="dev-button" onclick="simulateReconnect()">
-            ✅ Simuler Reconnexion
-        </button>
-        <button class="dev-button danger" onclick="simulateError('E101: Allumage raté')">
-            🔥 Simuler E101
-        </button>
-        <button class="dev-button danger" onclick="simulateError('E108: Porte ouverte')">
-            🚪 Simuler E108
-        </button>
-        <button class="dev-button" onclick="clearError()">
-            ✅ Effacer Erreur
-        </button>
-    </div>
+    <!-- Menu de développement supprimé -->
 
-    <div class="connection-status" id="connectionStatus">
-        <span id="connectionText">Connexion...</span>
-    </div>
+    <!-- Statut de connexion supprimé -->
 
     <div class="container">
         <div class="header">
@@ -494,13 +359,25 @@
         <div class="status-card" id="statusCard">
             <div class="status-info">
                 <span class="status-label">Statut</span>
-                <span class="status-value" id="statusValue">OFF</span>
+                <div class="status-display">
+                    <div class="status-item">
+                        <span class="status-icon" id="powerIcon">⚫</span>
+                        <span class="status-text" id="powerStatus">OFF</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-icon" id="fireIcon">❄️</span>
+                        <span class="status-text" id="fireStatus">Éteint</span>
+                    </div>
+                </div>
+                <button class="btn-refresh" id="refreshBtn" onclick="refreshState()" title="Rafraîchir l'état et tenter la reconnexion">
+                    <span class="refresh-icon" id="refreshIcon">🔄</span>
+                </button>
             </div>
             <div class="temperature-display">
-                <span id="currentTemp">22.0</span>°C
+                <span id="currentTemp">--</span>°C
             </div>
             <div style="color: #666; font-size: 0.9em;">
-                Consigne: <span id="setpointTemp">22.0</span>°C
+                Consigne: <span id="setpointTemp">--°C</span>
             </div>
             <div id="errorDisplay" style="display: none; color: #dc3545; font-size: 0.9em; margin-top: 10px; padding: 8px; background: #fff5f5; border-radius: 5px; border-left: 3px solid #dc3545;">
                 <strong>⚠️ Erreur:</strong> <span id="errorMessage">Aucune erreur</span>
@@ -516,15 +393,17 @@
                            id="tempSlider" 
                            min="15" 
                            max="27" 
-                           step="0.5" 
+                           step="1" 
                            value="22">
-                    <span class="temp-value" id="tempValue">22.0°C</span>
+                    <span class="temp-value" id="tempValue">--°C</span>
                 </div>
                 <button class="btn" id="setTempBtn" onclick="setTemperature()">
                     Définir
                 </button>
             </div>
 
+            <!-- Contrôles on/off temporairement désactivés -->
+            <!--
             <div class="control-group">
                 <label class="control-label">Contrôle du poêle</label>
                 <div class="power-controls">
@@ -536,27 +415,31 @@
                     </button>
                 </div>
             </div>
+            -->
         </div>
     </div>
 
     <script>
-        // Configuration Socket.IO
-        const socket = io();
+        console.log('=== SCRIPT JAVASCRIPT CHARGÉ ===');
+        // Socket.IO supprimé - plus de temps réel
         
         // Éléments DOM
-        const connectionStatus = document.getElementById('connectionStatus');
-        const connectionText = document.getElementById('connectionText');
         const statusCard = document.getElementById('statusCard');
-        const statusValue = document.getElementById('statusValue');
+        const powerIcon = document.getElementById('powerIcon');
+        const powerStatus = document.getElementById('powerStatus');
+        const fireIcon = document.getElementById('fireIcon');
+        const fireStatus = document.getElementById('fireStatus');
         const currentTemp = document.getElementById('currentTemp');
         const setpointTemp = document.getElementById('setpointTemp');
         const tempSlider = document.getElementById('tempSlider');
         const tempValue = document.getElementById('tempValue');
         const setTempBtn = document.getElementById('setTempBtn');
-        const powerOnBtn = document.getElementById('powerOnBtn');
-        const powerOffBtn = document.getElementById('powerOffBtn');
+        // const powerOnBtn = document.getElementById('powerOnBtn');
+        // const powerOffBtn = document.getElementById('powerOffBtn');
         const errorDisplay = document.getElementById('errorDisplay');
         const errorMessage = document.getElementById('errorMessage');
+        const refreshBtn = document.getElementById('refreshBtn');
+        const refreshIcon = document.getElementById('refreshIcon');
 
         // État actuel
         let currentState = {
@@ -564,43 +447,67 @@
             synchronized: false,
             status: 'OFF',
             power: false,
-            temperature: 22.0,
-            setpoint: 22.0,
+            temperature: '--',
+            setpoint: '--',
             error_code: 0,
             error_message: 'Aucune erreur'
         };
 
-        // État du mode développement
-        let devMode = false;
-        let devMenuVisible = false;
-        let tempSimSlider = null;
-        let tempSimValue = null;
+        // Mode développement supprimé
 
-        // Gestion de la connexion WebSocket
-        socket.on('connect', function() {
-            updateConnectionStatus(true);
-            console.log('Connecté au serveur');
-        });
+        // Gestionnaires WebSocket supprimés - plus de temps réel
 
-        socket.on('disconnect', function() {
-            updateConnectionStatus(false);
-            console.log('Déconnecté du serveur');
-        });
+        // Mise à jour de l'affichage du statut avec icônes
+        function updateStatusDisplay(state) {
+            // Gérer l'état de chargement
+            if (state.status === 'CHARGEMENT...') {
+                powerIcon.textContent = '⏳';
+                powerStatus.textContent = 'Chargement...';
+                fireIcon.textContent = '⏳';
+                fireStatus.textContent = 'Chargement...';
+                statusCard.className = 'status-card';
+                return;
+            }
+            
+            // Déterminer l'état du poêle (ON/OFF)
+            const isPowerOn = state.power || state.status !== 'OFF';
+            
+            // Mise à jour de l'icône et du texte du poêle
+            if (isPowerOn) {
+                powerIcon.textContent = '🟢';
+                powerStatus.textContent = 'ON';
+            } else {
+                powerIcon.textContent = '⚫';
+                powerStatus.textContent = 'OFF';
+            }
+            
+            // Déterminer l'état du feu
+            let fireIconText, fireStatusText;
+            if (!isPowerOn) {
+                fireIconText = '❄️';
+                fireStatusText = 'Éteint';
+            } else if (state.status === 'BURNING' || state.status === 'STARTING') {
+                fireIconText = '🔥';
+                fireStatusText = 'Allumé';
+            } else if (state.status === 'COOLING') {
+                fireIconText = '❄️';
+                fireStatusText = 'Éteint';
+            } else {
+                fireIconText = '❄️';
+                fireStatusText = 'Éteint';
+            }
+            
+            fireIcon.textContent = fireIconText;
+            fireStatus.textContent = fireStatusText;
+            
+            // Mise à jour de la classe de la carte selon l'état
+            statusCard.className = 'status-card ' + state.status.toLowerCase();
+        }
 
-        socket.on('state_update', function(state) {
-            console.log('Mise à jour d\'état reçue via WebSocket:', state);
-            updateState(state);
-        });
-
-        // Mise à jour du statut de connexion
+        // Mise à jour du statut de connexion (simplifiée)
         function updateConnectionStatus(connected) {
             currentState.connected = connected;
-            if (connected) {
-                connectionStatus.className = 'connection-status connected';
-                connectionText.textContent = 'Connecté';
-            } else {
-                connectionStatus.className = 'connection-status disconnected';
-                connectionText.textContent = 'Déconnecté';
+            if (!connected) {
                 // Réinitialiser la synchronisation si déconnecté
                 currentState.synchronized = false;
             }
@@ -617,22 +524,35 @@
                 currentState.synchronized = true;
             }
             
-            // Mise à jour du statut
-            statusValue.textContent = state.status;
-            statusCard.className = 'status-card ' + state.status.toLowerCase();
+            // Mise à jour du statut avec icônes
+            updateStatusDisplay(state);
             
             // Mise à jour des températures
-            currentTemp.textContent = state.temperature.toFixed(1);
-            setpointTemp.textContent = state.setpoint.toFixed(1);
-            
-            // Mise à jour du slider si la valeur a changé
-            if (Math.abs(parseFloat(tempSlider.value) - state.setpoint) > 0.1) {
-                tempSlider.value = state.setpoint;
-                tempValue.textContent = state.setpoint.toFixed(1) + '°C';
+            if (typeof state.temperature === 'number') {
+                currentTemp.textContent = state.temperature.toFixed(1);
+            } else {
+                currentTemp.textContent = state.temperature;
             }
             
-            // Mise à jour des boutons de contrôle
-            updatePowerButtons(state.power);
+            if (typeof state.setpoint === 'number') {
+                setpointTemp.textContent = state.setpoint.toFixed(1) + '°C';
+            } else {
+                setpointTemp.textContent = state.setpoint;
+            }
+            
+            // Mise à jour du slider si la valeur a changé (seulement si c'est un nombre)
+            if (typeof state.setpoint === 'number') {
+                tempSlider.value = state.setpoint;
+                tempValue.textContent = state.setpoint.toFixed(1) + '°C';
+            } else {
+                // Si la consigne n'est pas un nombre, garder le slider à sa position actuelle
+                // mais afficher la valeur du slider
+                const sliderValue = parseFloat(tempSlider.value);
+                tempValue.textContent = sliderValue.toFixed(1) + '°C';
+            }
+            
+            // Mise à jour des boutons de contrôle - DÉSACTIVÉE
+            // updatePowerButtons(state.power);
             
             // Mise à jour du bouton "Définir"
             updateSetTempButton();
@@ -640,28 +560,33 @@
             // Mise à jour de l'affichage des erreurs
             updateErrorDisplay();
             
-            // Mise à jour du slider de simulation
-            updateSimulationSlider();
+            // Mise à jour du slider de simulation supprimée
             
             // Mise à jour de l'état de l'interface
             updateInterfaceState();
         }
 
-        // Mise à jour des boutons de contrôle
-        function updatePowerButtons(powerOn) {
-            if (powerOn) {
-                powerOnBtn.disabled = true;
-                powerOffBtn.disabled = false;
-            } else {
-                powerOnBtn.disabled = false;
-                powerOffBtn.disabled = true;
-            }
-        }
+        // Mise à jour des boutons de contrôle - DÉSACTIVÉE
+        // function updatePowerButtons(powerOn) {
+        //     if (powerOn) {
+        //         powerOnBtn.disabled = true;
+        //         powerOffBtn.disabled = false;
+        //     } else {
+        //         powerOnBtn.disabled = false;
+        //         powerOffBtn.disabled = true;
+        //     }
+        // }
 
         // Mise à jour du bouton "Définir"
         function updateSetTempButton() {
             const sliderValue = parseFloat(tempSlider.value);
             const currentSetpoint = currentState.setpoint;
+            
+            // Si la consigne n'est pas un nombre (ex: "--"), désactiver le bouton
+            if (typeof currentSetpoint !== 'number') {
+                setTempBtn.disabled = true;
+                return;
+            }
             
             if (Math.abs(sliderValue - currentSetpoint) < 0.1) {
                 setTempBtn.disabled = true;
@@ -672,32 +597,41 @@
 
         // Mise à jour de l'affichage des erreurs
         function updateErrorDisplay() {
-            if (currentState.error_code && currentState.error_code !== 0) {
-                errorMessage.textContent = currentState.error_message;
+            // Afficher les erreurs seulement si on a tenté de se connecter
+            // Ne pas afficher d'erreur pendant le chargement initial
+            if (currentState.status === 'CHARGEMENT...' || currentState.error_message === 'Chargement en cours...') {
+                errorDisplay.style.display = 'none';
+                return;
+            }
+            
+            // Afficher les erreurs de connexion ou les erreurs du poêle
+            if (!currentState.connected || (currentState.error_code && currentState.error_code !== 0)) {
+                if (!currentState.connected) {
+                    errorMessage.textContent = 'Connexion série perdue - vérifiez le câble';
+                } else {
+                    errorMessage.textContent = currentState.error_message;
+                }
                 errorDisplay.style.display = 'block';
             } else {
                 errorDisplay.style.display = 'none';
             }
         }
 
-        // Mise à jour du slider de simulation
-        function updateSimulationSlider() {
-            if (tempSimSlider && tempSimValue) {
-                tempSimSlider.value = currentState.temperature;
-                tempSimValue.textContent = currentState.temperature.toFixed(1) + '°C';
-            }
-        }
+        // Fonction de simulation supprimée
 
         // Mise à jour de l'état de l'interface
         function updateInterfaceState() {
             const isReady = currentState.connected && currentState.synchronized;
             const container = document.querySelector('.container');
             
-            // Désactiver/activer tous les contrôles
+            // Désactiver/activer tous les contrôles (sauf le bouton de test de connexion)
             tempSlider.disabled = !isReady;
             setTempBtn.disabled = !isReady || setTempBtn.disabled;
-            powerOnBtn.disabled = !isReady || powerOnBtn.disabled;
-            powerOffBtn.disabled = !isReady || powerOffBtn.disabled;
+            // powerOnBtn.disabled = !isReady || powerOnBtn.disabled;
+            // powerOffBtn.disabled = !isReady || powerOffBtn.disabled;
+            
+            // Le bouton de test de connexion reste toujours actif
+            // testConnectionBtn reste toujours disponible
             
             // Appliquer le style d'inactivité
             if (isReady) {
@@ -706,17 +640,7 @@
                 container.classList.add('interface-inactive');
             }
             
-            // Mettre à jour le statut de connexion
-            if (currentState.connected && currentState.synchronized) {
-                connectionText.textContent = 'Synchronisé';
-                connectionStatus.className = 'connection-status connected';
-            } else if (currentState.connected && !currentState.synchronized) {
-                connectionText.textContent = 'En attente de sync...';
-                connectionStatus.className = 'connection-status disconnected';
-            } else {
-                connectionText.textContent = 'Déconnecté';
-                connectionStatus.className = 'connection-status disconnected';
-            }
+            // Statut de connexion supprimé - plus d'affichage en haut à droite
         }
 
         // Gestion du slider de température
@@ -735,7 +659,9 @@
                 return;
             }
 
-            setLoading(true);
+            // Désactiver seulement le bouton "Définir" et le bouton refresh
+            setSetTempLoading(true);
+            refreshBtn.disabled = true;
             
             fetch('/api/set_temperature', {
                 method: 'POST',
@@ -748,6 +674,11 @@
             .then(data => {
                 if (data.success) {
                     console.log('Température définie:', temperature);
+                    // Mettre à jour l'affichage de la consigne
+                    currentState.setpoint = temperature;
+                    setpointTemp.textContent = temperature.toFixed(1) + '°C';
+                    tempValue.textContent = temperature.toFixed(1) + '°C';
+                    showMessage('Température définie avec succès', 'success');
                 } else {
                     alert('Erreur: ' + data.message);
                 }
@@ -757,37 +688,38 @@
                 alert('Erreur de communication');
             })
             .finally(() => {
-                setLoading(false);
+                setSetTempLoading(false);
+                refreshBtn.disabled = false;
             });
         }
 
-        // Contrôle du poêle (allumer/éteindre)
-        function setPower(powerOn) {
-            setLoading(true);
-            
-            fetch('/api/set_power', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ power: powerOn })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    console.log('Poêle', powerOn ? 'allumé' : 'éteint');
-                } else {
-                    alert('Erreur: ' + data.message);
-                }
-            })
-            .catch(error => {
-                console.error('Erreur:', error);
-                alert('Erreur de communication');
-            })
-            .finally(() => {
-                setLoading(false);
-            });
-        }
+        // Contrôle du poêle (allumer/éteindre) - DÉSACTIVÉ
+        // function setPower(powerOn) {
+        //     setLoading(true);
+        //     
+        //     fetch('/api/set_power', {
+        //         method: 'POST',
+        //         headers: {
+        //             'Content-Type': 'application/json',
+        //         },
+        //         body: JSON.stringify({ power: powerOn })
+        //     })
+        //     .then(response => response.json())
+        //     .then(data => {
+        //         if (data.success) {
+        //             console.log('Poêle', powerOn ? 'allumé' : 'éteint');
+        //         } else {
+        //             alert('Erreur: ' + data.message);
+        //         }
+        //     })
+        //     .catch(error => {
+        //         console.error('Erreur:', error);
+        //         alert('Erreur de communication');
+        //     })
+        //     .finally(() => {
+        //         setLoading(false);
+        //     });
+        // }
 
         // Gestion du loading
         function setLoading(loading) {
@@ -799,141 +731,210 @@
             }
         }
 
-        // Fonctions de simulation (mode développement)
-        function toggleDevMenu() {
-            devMenuVisible = !devMenuVisible;
-            const devMenu = document.getElementById('devMenu');
-            const devToggle = document.getElementById('devToggle');
-            
-            if (devMenuVisible) {
-                devMenu.style.display = 'block';
-                devToggle.style.background = '#28a745';
+        function setSetTempLoading(loading) {
+            if (loading) {
+                setTempBtn.disabled = true;
+                setTempBtn.textContent = 'Définition...';
+                setTempBtn.classList.add('loading');
             } else {
-                devMenu.style.display = 'none';
-                devToggle.style.background = '#667eea';
+                setTempBtn.disabled = false;
+                setTempBtn.textContent = 'Définir';
+                setTempBtn.classList.remove('loading');
             }
         }
 
-        function simulateState(status, temperature, setpoint, power) {
-            console.log('Simulation demandée:', { status, temperature, setpoint, power });
+        function showMessage(message, type = 'info') {
+            // Créer un élément de message temporaire
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message message-${type}`;
+            messageDiv.textContent = message;
+            messageDiv.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 10px 20px;
+                border-radius: 4px;
+                color: white;
+                font-weight: bold;
+                z-index: 1000;
+                opacity: 0;
+                transition: opacity 0.3s ease;
+            `;
             
-            fetch('/api/simulate_state', {
+            // Couleurs selon le type
+            if (type === 'success') {
+                messageDiv.style.backgroundColor = '#28a745';
+            } else if (type === 'error') {
+                messageDiv.style.backgroundColor = '#dc3545';
+            } else {
+                messageDiv.style.backgroundColor = '#17a2b8';
+            }
+            
+            document.body.appendChild(messageDiv);
+            
+            // Animation d'apparition
+            setTimeout(() => {
+                messageDiv.style.opacity = '1';
+            }, 100);
+            
+            // Suppression automatique après 3 secondes
+            setTimeout(() => {
+                messageDiv.style.opacity = '0';
+                setTimeout(() => {
+                    if (messageDiv.parentNode) {
+                        messageDiv.parentNode.removeChild(messageDiv);
+                    }
+                }, 300);
+            }, 3000);
+        }
+
+        // Rafraîchir l'état du poêle
+        function refreshState() {
+            if (refreshBtn.disabled) {
+                return; // Éviter les appels multiples
+            }
+
+            setRefreshLoading(true);
+            
+            fetch('/api/refresh_state', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    status: status,
-                    temperature: temperature,
-                    setpoint: setpoint,
-                    power: power
-                })
+                }
             })
-            .then(response => {
-                console.log('Réponse reçue:', response.status);
-                return response.json();
-            })
+            .then(response => response.json())
             .then(data => {
-                console.log('Données reçues:', data);
                 if (data.success) {
-                    console.log('État simulé avec succès:', data.message);
-                    // Mettre à jour l'état local immédiatement
-                    currentState.status = status;
-                    currentState.temperature = temperature;
-                    currentState.setpoint = setpoint;
-                    currentState.power = power;
-                    updateState(currentState);
+                    console.log('État rafraîchi avec succès');
+                    updateState(data.state);
                 } else {
-                    console.error('Erreur simulation:', data.message);
-                    alert('Erreur de simulation: ' + data.message);
+                    console.error('Erreur lors du rafraîchissement:', data.message);
+                    // Si c'est un problème de connexion, afficher l'état mais ne pas alerter
+                    if (data.state) {
+                        updateState(data.state);
+                    }
+                    // Ne pas alerter pour les erreurs de connexion, juste afficher l'état
                 }
             })
             .catch(error => {
-                console.error('Erreur fetch:', error);
-                alert('Erreur de communication: ' + error.message);
+                console.error('Erreur de communication:', error);
+                alert('Erreur de communication lors du rafraîchissement');
+            })
+            .finally(() => {
+                setRefreshLoading(false);
             });
         }
 
-        function simulateDisconnect() {
+        // Gestion du loading du bouton de rafraîchissement
+        function setRefreshLoading(loading) {
+            if (loading) {
+                refreshBtn.disabled = true;
+                refreshIcon.classList.add('loading');
+            } else {
+                refreshBtn.disabled = false;
+                refreshIcon.classList.remove('loading');
+            }
+        }
+
+        // Fonctions de test de connexion supprimées - le bouton de rafraîchissement gère la reconnexion
+
+        // Fonctions de simulation supprimées
+
+        // Initialisation de l'interface avec état déconnecté par défaut
+        currentState.connected = false;
+        currentState.synchronized = false;
+        currentState.temperature = '--';
+        currentState.setpoint = '--';
+        currentState.status = 'CHARGEMENT...';
+        currentState.error_message = 'Chargement en cours...';
+        
+        // Forcer l'affichage de "--" dès le chargement
+        currentTemp.textContent = '--';
+        setpointTemp.textContent = '--°C';
+        tempValue.textContent = '--°C';
+        updateStatusDisplay(currentState);
+        updateErrorDisplay();
+        updateInterfaceState();
+
+        // Chargement initial de l'état à l'ouverture de la page
+        function loadInitialState() {
+            console.log('=== DÉBUT loadInitialState ===');
+            console.log('Chargement de l\'état initial...');
+            setRefreshLoading(true);
+            
+            // Afficher un état de chargement avec "--" pour les températures
             currentState.connected = false;
             currentState.synchronized = false;
-            updateConnectionStatus(false);
-            updateInterfaceState();
-        }
-
-        function simulateReconnect() {
-            currentState.connected = true;
-            currentState.synchronized = true;
-            updateConnectionStatus(true);
-            updateInterfaceState();
-        }
-
-        function simulateError(errorMessage) {
-            currentState.error_code = 101; // Code d'erreur simulé
-            currentState.error_message = errorMessage;
-            updateErrorDisplay();
-        }
-
-        function clearError() {
-            currentState.error_code = 0;
-            currentState.error_message = 'Aucune erreur';
-            updateErrorDisplay();
-        }
-
-        function applySimulatedTemp() {
-            if (!tempSimSlider) return;
+            currentState.temperature = '--';
+            currentState.setpoint = '--';
+            currentState.status = 'CHARGEMENT...';
+            currentState.error_message = 'Chargement en cours...';
             
-            const simulatedTemp = parseFloat(tempSimSlider.value);
-            const currentSetpoint = currentState.setpoint;
+            // Mettre à jour l'affichage immédiatement
+            currentTemp.textContent = '--';
+            setpointTemp.textContent = '--°C';
+            tempValue.textContent = '--°C';
+            updateStatusDisplay(currentState);
+            updateErrorDisplay();
+            updateInterfaceState();
             
-            // Simuler l'état avec la température choisie
-            simulateState(currentState.status, simulatedTemp, currentSetpoint, currentState.power);
-        }
+            // Ajouter un timeout pour éviter que la page reste bloquée
+            const timeoutId = setTimeout(() => {
+                console.log('Timeout lors du chargement initial');
+                const timeoutState = {
+                    connected: false,
+                    synchronized: false,
+                    temperature: '--',
+                    setpoint: '--',
+                    status: 'OFF',
+                    power: false,
+                    error_code: 0,
+                    error_message: 'Timeout - serveur non accessible'
+                };
+                updateState(timeoutState);
+                setRefreshLoading(false);
+            }, 10000); // 10 secondes de timeout
 
-        // Vérifier le mode développement
-        function checkDevMode() {
-            fetch('/api/dev_mode')
-                .then(response => response.json())
-                .then(data => {
-                    console.log('Mode développement:', data.dev_mode);
-                    devMode = data.dev_mode;
-                    const devToggle = document.getElementById('devToggle');
-                    if (devMode) {
-                        devToggle.style.display = 'block';
-                        // Initialiser les éléments du slider de simulation
-                        tempSimSlider = document.getElementById('tempSimSlider');
-                        tempSimValue = document.getElementById('tempSimValue');
-                        
-                        // Gestionnaire d'événement pour le slider
-                        if (tempSimSlider) {
-                            tempSimSlider.addEventListener('input', function() {
-                                const value = parseFloat(this.value);
-                                tempSimValue.textContent = value.toFixed(1) + '°C';
-                            });
-                        }
-                    } else {
-                        devToggle.style.display = 'none';
+            console.log('Envoi de la requête fetch vers /api/state...');
+            fetch('/api/state')
+                .then(response => {
+                    console.log('Réponse reçue:', response.status, response.statusText);
+                    clearTimeout(timeoutId);
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                     }
+                    return response.json();
+                })
+                .then(state => {
+                    console.log('État initial chargé:', state);
+                    updateState(state);
                 })
                 .catch(error => {
-                    console.error('Erreur vérification mode dev:', error);
+                    clearTimeout(timeoutId);
+                    console.error('Erreur lors du chargement initial:', error);
+                    // En cas d'erreur, afficher un état d'erreur
+                    const errorState = {
+                        connected: false,
+                        synchronized: false,
+                        temperature: '--',
+                        setpoint: '--',
+                        status: 'OFF',
+                        power: false,
+                        error_code: 0,
+                        error_message: 'Erreur de communication avec le serveur'
+                    };
+                    updateState(errorState);
+                })
+                .finally(() => {
+                    setRefreshLoading(false);
                 });
         }
 
-        // Initialisation de l'interface
-        updateInterfaceState();
-        checkDevMode();
-
-        // Chargement initial de l'état
-        fetch('/api/state')
-            .then(response => response.json())
-            .then(state => {
-                updateState(state);
-            })
-            .catch(error => {
-                console.error('Erreur lors du chargement initial:', error);
-                updateInterfaceState();
-            });
+        // Charger l'état initial quand le DOM est prêt
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM chargé, démarrage du chargement initial...');
+            loadInitialState();
+        });
     </script>
 </body>
 </html>

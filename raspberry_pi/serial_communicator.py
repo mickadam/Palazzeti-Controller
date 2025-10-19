@@ -19,7 +19,7 @@ class SerialCommunicator:
         
     def connect(self, port, baudrate=38400, timeout=10):
         """
-        Établir la connexion série au poêle
+        Établir la connexion série au poêle avec test de communication
         
         Args:
             port: Port série (ex: '/dev/ttyUSB0')
@@ -39,9 +39,38 @@ class SerialCommunicator:
                 stopbits=serial.STOPBITS_TWO,  # 2 stop bits selon documentation
             )
             logger.info(f"Connexion série établie sur {port} ({baudrate}, 8N2)")
-            return True
+            
+            # Test de communication pour vérifier que le poêle répond
+            if self._test_communication():
+                logger.info("Test de communication réussi - poêle détecté")
+                return True
+            else:
+                logger.warning("Test de communication échoué - câble peut-être déconnecté")
+                self.disconnect()
+                return False
+                
         except Exception as e:
             logger.error(f"Erreur de connexion série: {e}")
+            return False
+    
+    def _test_communication(self):
+        """
+        Tester la communication avec le poêle pour vérifier la connexion
+        
+        Returns:
+            bool: True si le poêle répond, False sinon
+        """
+        try:
+            # Attendre une trame de synchronisation (0x00) pendant 3 secondes
+            sync_frame = self.synchro_trame(0x00, timeout=3)
+            if sync_frame:
+                logger.debug("Trame de synchronisation reçue - poêle détecté")
+                return True
+            else:
+                logger.debug("Aucune trame de synchronisation reçue - poêle non détecté")
+                return False
+        except Exception as e:
+            logger.error(f"Erreur lors du test de communication: {e}")
             return False
     
     def disconnect(self):
@@ -55,7 +84,26 @@ class SerialCommunicator:
     
     def is_connected(self):
         """Vérifier si la connexion est active"""
-        return self.serial_connection and self.serial_connection.is_open
+        if not self.serial_connection:
+            return False
+        
+        if not self.serial_connection.is_open:
+            return False
+        
+        # Test de communication pour vérifier que le poêle répond
+        try:
+            # Tenter de lire une trame de synchronisation avec un timeout configurable
+            from config import CONNECTION_TEST_TIMEOUT
+            sync_frame = self.synchro_trame(0x00, timeout=CONNECTION_TEST_TIMEOUT)
+            if sync_frame:
+                logger.debug("Test de connexion réussi - poêle répond")
+                return True
+            else:
+                logger.debug("Aucune trame de synchronisation reçue - connexion considérée comme perdue")
+                return False
+        except Exception as e:
+            logger.debug(f"Erreur lors du test de connexion: {e}")
+            return False
     
     def synchro_trame(self, expected_id, timeout=5):
         """

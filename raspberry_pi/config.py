@@ -7,6 +7,7 @@ import os
 SERIAL_PORT = os.getenv('SERIAL_PORT', '/dev/ttyUSB0')  # Port série pour le câble RJ11
 BAUD_RATE = int(os.getenv('BAUD_RATE', '38400'))  # 38400 bauds selon documentation
 TIMEOUT = int(os.getenv('TIMEOUT', '10'))
+CONNECTION_TEST_TIMEOUT = int(os.getenv('CONNECTION_TEST_TIMEOUT', '5'))  # Timeout pour test de connexion
 
 # Configuration Flask
 HOST = os.getenv('HOST', '0.0.0.0')
