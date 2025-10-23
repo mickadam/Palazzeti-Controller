@@ -15,7 +15,7 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            color: #333;x
+            color: #333;
         }
 
         .container {
@@ -57,6 +57,7 @@
             text-decoration: none;
             font-weight: 600;
             transition: all 0.3s ease;
+            -webkit-backdrop-filter: blur(10px);
             backdrop-filter: blur(10px);
         }
 
@@ -77,6 +78,7 @@
             padding: 25px;
             margin-bottom: 30px;
             box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            -webkit-backdrop-filter: blur(10px);
             backdrop-filter: blur(10px);
         }
 
@@ -160,6 +162,7 @@
             padding: 25px;
             margin-bottom: 30px;
             box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            -webkit-backdrop-filter: blur(10px);
             backdrop-filter: blur(10px);
         }
 
@@ -240,6 +243,7 @@
             padding: 25px;
             margin-bottom: 30px;
             box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            -webkit-backdrop-filter: blur(10px);
             backdrop-filter: blur(10px);
         }
 
@@ -333,6 +337,153 @@
             transform: none;
         }
 
+        /* Timeline Styles */
+        .timeline-section {
+            background: rgba(255,255,255,0.95);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+        }
+
+        .timeline-container {
+            position: relative;
+            margin: 20px 0;
+        }
+
+        .timeline-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .timeline-hours {
+            display: flex;
+            position: relative;
+            height: 60px;
+            background: linear-gradient(90deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .timeline-hour {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            color: #666;
+            border-right: 1px solid #dee2e6;
+            position: relative;
+        }
+
+        .timeline-hour:last-child {
+            border-right: none;
+        }
+
+        .timeline-hour:nth-child(6n) {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .timeline-slots {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 100%;
+            display: flex;
+        }
+
+        .timeline-slot {
+            position: absolute;
+            height: 100%;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .timeline-slot:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .timeline-slot.program-1 { background: linear-gradient(45deg, #667eea, #764ba2); }
+        .timeline-slot.program-2 { background: linear-gradient(45deg, #f093fb, #f5576c); }
+        .timeline-slot.program-3 { background: linear-gradient(45deg, #4facfe, #00f2fe); }
+        .timeline-slot.program-4 { background: linear-gradient(45deg, #43e97b, #38f9d7); }
+        .timeline-slot.program-5 { background: linear-gradient(45deg, #fa709a, #fee140); }
+        .timeline-slot.program-6 { background: linear-gradient(45deg, #a8edea, #fed6e3); }
+
+        .timeline-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 15px;
+            justify-content: center;
+        }
+
+        .timeline-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+
+        .timeline-legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+
+        .timeline-day-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .timeline-day-btn {
+            padding: 8px 16px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .timeline-day-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .timeline-day-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .timeline-info {
+            text-align: center;
+            margin-top: 15px;
+            color: #666;
+            font-style: italic;
+        }
+
         @media (max-width: 768px) {
             .container {
                 padding: 10px;
@@ -413,6 +564,32 @@
                 </div>
             </div>
 
+            <!-- Timeline de programmation -->
+            <div class="timeline-section">
+                <h2 class="section-title">Timeline de Programmation</h2>
+                <div class="timeline-day-selector" id="timeline-day-selector">
+                    <!-- Les boutons de jour seront générés dynamiquement -->
+                </div>
+                <div class="timeline-container">
+                    <div class="timeline-header">
+                        <span>Programmation du jour</span>
+                        <span id="timeline-day-name">Lundi</span>
+                    </div>
+                    <div class="timeline-hours" id="timeline-hours">
+                        <!-- Les heures seront générées dynamiquement -->
+                    </div>
+                    <div class="timeline-slots" id="timeline-slots">
+                        <!-- Les créneaux seront générés dynamiquement -->
+                    </div>
+                </div>
+                <div class="timeline-legend" id="timeline-legend">
+                    <!-- La légende sera générée dynamiquement -->
+                </div>
+                <div class="timeline-info" id="timeline-info">
+                    Cliquez sur un jour pour voir sa programmation
+                </div>
+            </div>
+
             <!-- Programmation par jour -->
             <div class="days-section">
                 <h2 class="section-title">Programmation par Jour</h2>
@@ -429,6 +606,7 @@
 
     <script>
         let chronoData = null;
+        let selectedDay = 0; // 0 = Lundi, 1 = Mardi, etc.
 
         // Charger les données du chrono au démarrage
         document.addEventListener('DOMContentLoaded', function() {
@@ -479,6 +657,9 @@
 
             // Afficher les jours
             displayDays(chronoData.days);
+
+            // Afficher la timeline
+            displayTimeline();
         }
 
         function updateTimerStatus(enabled) {
@@ -617,6 +798,181 @@
             setTimeout(() => {
                 error.style.display = 'none';
             }, 5000);
+        }
+
+        // Fonctions pour la timeline
+        function displayTimeline() {
+            if (!chronoData) return;
+
+            // Générer les boutons de jour
+            generateDaySelector();
+            
+            // Générer la timeline pour le jour sélectionné
+            generateTimelineForDay(selectedDay);
+            
+            // Générer la légende
+            generateLegend();
+        }
+
+        function generateDaySelector() {
+            const selector = document.getElementById('timeline-day-selector');
+            const dayNames = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+            
+            selector.innerHTML = '';
+            
+            dayNames.forEach((dayName, index) => {
+                const btn = document.createElement('button');
+                btn.className = `timeline-day-btn ${index === selectedDay ? 'active' : ''}`;
+                btn.textContent = dayName;
+                btn.onclick = () => selectDay(index);
+                selector.appendChild(btn);
+            });
+        }
+
+        function selectDay(dayIndex) {
+            selectedDay = dayIndex;
+            generateDaySelector();
+            generateTimelineForDay(dayIndex);
+        }
+
+        function generateTimelineForDay(dayIndex) {
+            if (!chronoData) return;
+
+            const day = chronoData.days[dayIndex];
+            const dayNames = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+            
+            // Mettre à jour le nom du jour
+            document.getElementById('timeline-day-name').textContent = dayNames[dayIndex];
+            
+            // Générer les heures (0-23)
+            generateTimelineHours();
+            
+            // Générer les créneaux
+            generateTimelineSlots(day);
+            
+            // Mettre à jour les informations
+            updateTimelineInfo(day);
+        }
+
+        function generateTimelineHours() {
+            const hoursContainer = document.getElementById('timeline-hours');
+            hoursContainer.innerHTML = '';
+            
+            for (let hour = 0; hour < 24; hour++) {
+                const hourDiv = document.createElement('div');
+                hourDiv.className = 'timeline-hour';
+                hourDiv.textContent = hour.toString().padStart(2, '0');
+                hoursContainer.appendChild(hourDiv);
+            }
+        }
+
+        function generateTimelineSlots(day) {
+            const slotsContainer = document.getElementById('timeline-slots');
+            slotsContainer.innerHTML = '';
+            
+            // Créer un tableau de 24 heures pour marquer les créneaux
+            const timeline = new Array(24).fill(null);
+            
+            // Traiter les 3 mémoires du jour
+            [day.memory_1, day.memory_2, day.memory_3].forEach((memory, memoryIndex) => {
+                if (memory > 0 && memory <= 6) {
+                    const program = chronoData.programs[memory - 1];
+                    if (program && (program.start_hour !== 0 || program.start_minute !== 0)) {
+                        const startTime = program.start_hour + program.start_minute / 60;
+                        const stopTime = program.stop_hour + program.stop_minute / 60;
+                        
+                        // Marquer les heures concernées
+                        for (let hour = Math.floor(startTime); hour < Math.ceil(stopTime); hour++) {
+                            if (hour >= 0 && hour < 24) {
+                                if (!timeline[hour]) {
+                                    timeline[hour] = [];
+                                }
+                                timeline[hour].push({
+                                    program: memory,
+                                    memory: memoryIndex + 1,
+                                    startTime: startTime,
+                                    stopTime: stopTime,
+                                    setpoint: program.setpoint
+                                });
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Créer les slots visuels
+            timeline.forEach((slots, hour) => {
+                if (slots && slots.length > 0) {
+                    slots.forEach((slot, slotIndex) => {
+                        const slotDiv = document.createElement('div');
+                        slotDiv.className = `timeline-slot program-${slot.program}`;
+                        
+                        // Calculer la position et la largeur
+                        const startPercent = (slot.startTime / 24) * 100;
+                        const stopPercent = (slot.stopTime / 24) * 100;
+                        const width = stopPercent - startPercent;
+                        
+                        slotDiv.style.left = `${startPercent}%`;
+                        slotDiv.style.width = `${width}%`;
+                        slotDiv.style.top = `${slotIndex * 20}px`;
+                        slotDiv.style.height = `${20 - 2}px`;
+                        
+                        // Texte du slot
+                        const startTime = formatTimeFromDecimal(slot.startTime);
+                        const stopTime = formatTimeFromDecimal(slot.stopTime);
+                        slotDiv.textContent = `P${slot.program} (${startTime}-${stopTime})`;
+                        slotDiv.title = `Programme ${slot.program} - Mémoire ${slot.memory}\n${startTime} à ${stopTime}\nTempérature: ${slot.setpoint}°C`;
+                        
+                        slotsContainer.appendChild(slotDiv);
+                    });
+                }
+            });
+        }
+
+        function formatTimeFromDecimal(decimalTime) {
+            const hours = Math.floor(decimalTime);
+            const minutes = Math.round((decimalTime - hours) * 60);
+            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+        }
+
+        function generateLegend() {
+            const legendContainer = document.getElementById('timeline-legend');
+            legendContainer.innerHTML = '';
+            
+            // Ajouter les programmes configurés
+            chronoData.programs.forEach((program, index) => {
+                const isConfigured = program.start_hour !== 0 || program.start_minute !== 0 || 
+                                   program.stop_hour !== 0 || program.stop_minute !== 0;
+                
+                if (isConfigured) {
+                    const legendItem = document.createElement('div');
+                    legendItem.className = 'timeline-legend-item';
+                    
+                    const colorDiv = document.createElement('div');
+                    colorDiv.className = `timeline-legend-color program-${index + 1}`;
+                    
+                    const textSpan = document.createElement('span');
+                    textSpan.textContent = `Programme ${index + 1} (${formatTime(program.start_hour, program.start_minute)} - ${formatTime(program.stop_hour, program.stop_minute)})`;
+                    
+                    legendItem.appendChild(colorDiv);
+                    legendItem.appendChild(textSpan);
+                    legendContainer.appendChild(legendItem);
+                }
+            });
+        }
+
+        function updateTimelineInfo(day) {
+            const infoContainer = document.getElementById('timeline-info');
+            const activeMemories = [day.memory_1, day.memory_2, day.memory_3].filter(m => m > 0);
+            
+            if (activeMemories.length === 0) {
+                infoContainer.textContent = 'Aucune programmation pour ce jour';
+                infoContainer.style.color = '#999';
+            } else {
+                const programText = activeMemories.map(m => `P${m}`).join(', ');
+                infoContainer.textContent = `Programmes actifs: ${programText}`;
+                infoContainer.style.color = '#333';
+            }
         }
     </script>
 </body>

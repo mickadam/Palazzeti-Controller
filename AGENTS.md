@@ -74,6 +74,7 @@ Ce projet est un contrôleur pour poêle à pellets Palazzetti qui communique vi
   - Affichage des heures de démarrage/arrêt et températures de consigne
   - Programmation par jour de la semaine (7 jours, 3 mémoires par jour)
   - Activation/désactivation du timer via toggle
+  - **Timeline de programmation** : Visualisation graphique des créneaux programmés
   - Interface responsive et intuitive
 - **API endpoints** :
   - `GET /api/chrono_data` : Récupérer toutes les données du timer
@@ -82,6 +83,11 @@ Ce projet est un contrôleur pour poêle à pellets Palazzetti qui communique vi
   - `POST /api/chrono_status` : Activer/désactiver le timer
 - **Navigation** : Lien "⏰ Timer" ajouté dans le menu principal
 - **Page** : `/timer` - Interface complète de gestion du timer
+- **Timeline** : Visualisation graphique des créneaux programmés par jour avec :
+  - Sélecteur de jour (Lun-Dim)
+  - Timeline 24h avec créneaux colorés par programme
+  - Légende des programmes configurés
+  - Informations détaillées au survol des créneaux
 
 ### Suivi de Consommation de Pellets
 - **Spécification** : `docs/specification_consommation_pellets.md`
