@@ -48,6 +48,36 @@
             font-size: 1.1em;
         }
 
+        .nav-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .nav-btn {
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+            border: 2px solid rgba(102, 126, 234, 0.3);
+            padding: 12px 24px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .nav-btn:hover {
+            background: rgba(102, 126, 234, 0.2);
+            border-color: rgba(102, 126, 234, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .nav-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
         .status-card {
             background: #f8f9fa;
             border-radius: 15px;
@@ -187,40 +217,92 @@
 
         .temp-control {
             display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .temp-display {
+            text-align: center;
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .temp-control-row {
+            display: flex;
             align-items: center;
             gap: 15px;
-            margin-bottom: 15px;
+        }
+
+        .temp-btn {
+            width: 50px;
+            height: 50px;
+            border: none;
+            border-radius: 50%;
+            background: #667eea;
+            color: white;
+            font-size: 1.5em;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+            transition: all 0.2s ease;
+        }
+
+        .temp-btn:hover {
+            background: #5a6fd8;
+            transform: scale(1.05);
+        }
+
+        .temp-btn:active {
+            transform: scale(0.95);
+        }
+
+        .temp-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
         }
 
         .temp-slider {
             flex: 1;
-            height: 8px;
-            border-radius: 5px;
+            height: 12px;
+            border-radius: 6px;
             background: #ddd;
             outline: none;
-            appearance: none;
             -webkit-appearance: none;
+            appearance: none;
         }
 
         .temp-slider::-webkit-slider-thumb {
-            appearance: none;
             -webkit-appearance: none;
-            width: 24px;
-            height: 24px;
+            appearance: none;
+            width: 32px;
+            height: 32px;
             border-radius: 50%;
             background: #667eea;
             cursor: pointer;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            transition: all 0.2s ease;
+        }
+
+        .temp-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
         }
 
         .temp-slider::-moz-range-thumb {
-            width: 24px;
-            height: 24px;
+            width: 32px;
+            height: 32px;
             border-radius: 50%;
             background: #667eea;
             cursor: pointer;
             border: none;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
         }
 
         .temp-value {
@@ -320,6 +402,11 @@
             cursor: not-allowed;
         }
 
+        .interface-inactive .temp-btn {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+
         /* Styles du bouton de test de connexion supprimés */
 
         /* Styles du menu de debug supprimés */
@@ -335,8 +422,31 @@
             }
 
             .temp-control {
-                flex-direction: column;
-                gap: 10px;
+                gap: 15px;
+            }
+
+            .temp-control-row {
+                gap: 20px;
+            }
+
+            .temp-btn {
+                width: 60px;
+                height: 60px;
+                font-size: 1.8em;
+            }
+
+            .temp-slider {
+                height: 16px;
+            }
+
+            .temp-slider::-webkit-slider-thumb {
+                width: 40px;
+                height: 40px;
+            }
+
+            .temp-slider::-moz-range-thumb {
+                width: 40px;
+                height: 40px;
             }
 
             .power-controls {
@@ -356,6 +466,11 @@
             <p>Contrôleur de poêle à pellets</p>
         </div>
 
+        <div class="nav-buttons">
+            <a href="/" class="nav-btn active">🏠 Accueil</a>
+            <a href="/timer" class="nav-btn">⏰ Timer</a>
+        </div>
+
         <div class="status-card" id="statusCard">
             <div class="status-info">
                 <span class="status-label">Statut</span>
@@ -367,6 +482,14 @@
                     <div class="status-item">
                         <span class="status-icon" id="fireIcon">❄️</span>
                         <span class="status-text" id="fireStatus">Éteint</span>
+                    </div>
+                    <div class="status-item" id="timerItem" style="display: none;">
+                        <span class="status-icon" id="timerIcon">⏰</span>
+                        <span class="status-text" id="timerStatus">Timer activé</span>
+                    </div>
+                    <div class="status-item" id="pelletItem" style="display: none;">
+                        <span class="status-icon" id="pelletIcon">🪵</span>
+                        <span class="status-text" id="pelletStatus">Pellets disponibles</span>
                     </div>
                 </div>
                 <button class="btn-refresh" id="refreshBtn" onclick="refreshState()" title="Rafraîchir l'état et tenter la reconnexion">
@@ -388,14 +511,19 @@
             <div class="control-group">
                 <label class="control-label">Température de consigne</label>
                 <div class="temp-control">
-                    <input type="range" 
-                           class="temp-slider" 
-                           id="tempSlider" 
-                           min="15" 
-                           max="27" 
-                           step="1" 
-                           value="22">
-                    <span class="temp-value" id="tempValue">--°C</span>
+                    <div class="temp-display" id="tempValue">--°C</div>
+                    <div class="temp-control-row">
+                        <button class="temp-btn" id="tempMinusBtn" onclick="decrementTemperature()">-</button>
+                        <input type="range" 
+                               class="temp-slider" 
+                               id="tempSlider" 
+                               min="15" 
+                               max="27" 
+                               step="1" 
+                               value="22"
+                               aria-label="Température de consigne">
+                        <button class="temp-btn" id="tempPlusBtn" onclick="incrementTemperature()">+</button>
+                    </div>
                 </div>
                 <button class="btn" id="setTempBtn" onclick="setTemperature()">
                     Définir
@@ -429,6 +557,12 @@
         const powerStatus = document.getElementById('powerStatus');
         const fireIcon = document.getElementById('fireIcon');
         const fireStatus = document.getElementById('fireStatus');
+        const timerItem = document.getElementById('timerItem');
+        const timerIcon = document.getElementById('timerIcon');
+        const timerStatus = document.getElementById('timerStatus');
+        const pelletItem = document.getElementById('pelletItem');
+        const pelletIcon = document.getElementById('pelletIcon');
+        const pelletStatus = document.getElementById('pelletStatus');
         const currentTemp = document.getElementById('currentTemp');
         const setpointTemp = document.getElementById('setpointTemp');
         const tempSlider = document.getElementById('tempSlider');
@@ -449,6 +583,7 @@
             power: false,
             temperature: '--',
             setpoint: '--',
+            timer_enabled: false,
             error_code: 0,
             error_message: 'Aucune erreur'
         };
@@ -527,6 +662,12 @@
             // Mise à jour du statut avec icônes
             updateStatusDisplay(state);
             
+            // Mise à jour de l'affichage du timer
+            updateTimerDisplay(state);
+            
+            // Mise à jour de l'affichage des pellets
+            updatePelletDisplay(state);
+            
             // Mise à jour des températures
             if (typeof state.temperature === 'number') {
                 currentTemp.textContent = state.temperature.toFixed(1);
@@ -595,6 +736,41 @@
             }
         }
 
+        // Mise à jour des boutons + et -
+        function updateTempButtons() {
+            const sliderValue = parseFloat(tempSlider.value);
+            const isReady = currentState.connected && currentState.synchronized;
+            
+            // Désactiver les boutons si pas connecté ou aux limites
+            document.getElementById('tempMinusBtn').disabled = !isReady || sliderValue <= 15;
+            document.getElementById('tempPlusBtn').disabled = !isReady || sliderValue >= 27;
+        }
+
+        // Mise à jour de l'affichage du timer
+        function updateTimerDisplay(state) {
+            if (state.timer_enabled === true) {
+                timerItem.style.display = 'flex';
+                timerIcon.textContent = '⏰';
+                timerStatus.textContent = 'Timer activé';
+            } else {
+                timerItem.style.display = 'none';
+            }
+        }
+
+        // Mise à jour de l'affichage des pellets
+        function updatePelletDisplay(state) {
+            // Afficher l'avertissement si le statut indique "E114" (Plus de pellets)
+            // ou si le code d'erreur est 253 (E114)
+            if (state.status === 'E114' || state.status === 'NO_PELLETS' || 
+                state.status === 253 || state.error_code === 253) {
+                pelletItem.style.display = 'flex';
+                pelletIcon.textContent = '⚠️';
+                pelletStatus.textContent = 'Plus de pellets';
+            } else {
+                pelletItem.style.display = 'none';
+            }
+        }
+
         // Mise à jour de l'affichage des erreurs
         function updateErrorDisplay() {
             // Afficher les erreurs seulement si on a tenté de se connecter
@@ -627,6 +803,7 @@
             // Désactiver/activer tous les contrôles (sauf le bouton de test de connexion)
             tempSlider.disabled = !isReady;
             setTempBtn.disabled = !isReady || setTempBtn.disabled;
+            updateTempButtons();
             // powerOnBtn.disabled = !isReady || powerOnBtn.disabled;
             // powerOffBtn.disabled = !isReady || powerOffBtn.disabled;
             
@@ -648,7 +825,32 @@
             const value = parseFloat(this.value);
             tempValue.textContent = value.toFixed(1) + '°C';
             updateSetTempButton();
+            updateTempButtons();
         });
+
+        // Incrémenter la température
+        function incrementTemperature() {
+            const currentValue = parseFloat(tempSlider.value);
+            if (currentValue < 27) {
+                tempSlider.value = currentValue + 1;
+                const newValue = parseFloat(tempSlider.value);
+                tempValue.textContent = newValue.toFixed(1) + '°C';
+                updateSetTempButton();
+                updateTempButtons();
+            }
+        }
+
+        // Décrémenter la température
+        function decrementTemperature() {
+            const currentValue = parseFloat(tempSlider.value);
+            if (currentValue > 15) {
+                tempSlider.value = currentValue - 1;
+                const newValue = parseFloat(tempSlider.value);
+                tempValue.textContent = newValue.toFixed(1) + '°C';
+                updateSetTempButton();
+                updateTempButtons();
+            }
+        }
 
         // Définir la température
         function setTemperature() {
@@ -845,6 +1047,7 @@
         currentState.synchronized = false;
         currentState.temperature = '--';
         currentState.setpoint = '--';
+        currentState.timer_enabled = false;
         currentState.status = 'CHARGEMENT...';
         currentState.error_message = 'Chargement en cours...';
         
@@ -853,6 +1056,8 @@
         setpointTemp.textContent = '--°C';
         tempValue.textContent = '--°C';
         updateStatusDisplay(currentState);
+        updateTimerDisplay(currentState);
+        updatePelletDisplay(currentState);
         updateErrorDisplay();
         updateInterfaceState();
 
@@ -867,14 +1072,19 @@
             currentState.synchronized = false;
             currentState.temperature = '--';
             currentState.setpoint = '--';
+            currentState.timer_enabled = false;
             currentState.status = 'CHARGEMENT...';
             currentState.error_message = 'Chargement en cours...';
+            currentState.pellet_consumption = null;
+            currentState.pellet_consumption_raw = null;
             
             // Mettre à jour l'affichage immédiatement
             currentTemp.textContent = '--';
             setpointTemp.textContent = '--°C';
             tempValue.textContent = '--°C';
             updateStatusDisplay(currentState);
+            updateTimerDisplay(currentState);
+            updatePelletDisplay(currentState);
             updateErrorDisplay();
             updateInterfaceState();
             
@@ -886,10 +1096,12 @@
                     synchronized: false,
                     temperature: '--',
                     setpoint: '--',
+                    timer_enabled: false,
                     status: 'OFF',
                     power: false,
                     error_code: 0,
-                    error_message: 'Timeout - serveur non accessible'
+                    error_message: 'Timeout - serveur non accessible',
+                    pellet_consumption_raw: null
                 };
                 updateState(timeoutState);
                 setRefreshLoading(false);
@@ -921,7 +1133,8 @@
                         status: 'OFF',
                         power: false,
                         error_code: 0,
-                        error_message: 'Erreur de communication avec le serveur'
+                        error_message: 'Erreur de communication avec le serveur',
+                        pellet_consumption_raw: null
                     };
                     updateState(errorState);
                 })

@@ -34,6 +34,11 @@ def index():
     """Page principale"""
     return render_template('index.html')
 
+@app.route('/timer')
+def timer():
+    """Page de gestion du timer"""
+    return render_template('timer.html')
+
 
 @app.route('/api/state')
 def api_state():
@@ -57,13 +62,17 @@ def api_state():
             'seco': 0,
             'power_level': 0,
             'alarm_status': 0,
-            'timer_enabled': False
+            'timer_enabled': False,
         }
         return jsonify(default_state)
     
     # Si connecté, tenter de lire l'état (avec test de communication)
     try:
         state = controller.get_state()
+        
+        # L'état des pellets est maintenant détecté via les codes d'erreur (E101)
+        # Plus besoin de lire la consommation de pellets
+        
         # Vérifier que l'état contient des données valides (pas de cache)
         if state.get('connected', False) and state.get('synchronized', False):
             logger.info("État lu avec succès depuis le poêle")
@@ -83,7 +92,8 @@ def api_state():
                 'seco': 0,
                 'power_level': 0,
                 'alarm_status': 0,
-                'timer_enabled': False
+                'timer_enabled': False,
+                'pellet_consumption_raw': None
             }
             return jsonify(default_state)
     except Exception as e:
@@ -135,7 +145,8 @@ def api_refresh_state():
                 'seco': 0,
                 'power_level': 0,
                 'alarm_status': 0,
-                'timer_enabled': False
+                'timer_enabled': False,
+                'pellet_consumption_raw': None
             }
             return jsonify({
                 'success': False,
@@ -157,6 +168,223 @@ def api_refresh_state():
             'success': False,
             'error': str(e),
             'message': 'Erreur lors du rafraîchissement'
+        }), 500
+
+
+@app.route('/api/pellet_consumption')
+def api_pellet_consumption():
+    """API pour obtenir la consommation de pellets"""
+    if controller is None:
+        return jsonify({'error': 'Contrôleur non initialisé'}), 500
+    
+    if not controller.is_connected():
+        return jsonify({'error': 'Connexion série perdue', 'consumption': None}), 503
+    
+    try:
+        consumption = controller.get_pellet_consumption()
+        if consumption is not None:
+            return jsonify({
+                'success': True,
+                'consumption': consumption,
+                'unit': 'kg',
+                'message': 'Consommation de pellets lue avec succès'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Impossible de lire la consommation de pellets',
+                'consumption': None
+            }), 500
+    except Exception as e:
+        logger.error(f"Erreur lors de la lecture de la consommation de pellets: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'consumption': None
+        }), 500
+
+
+@app.route('/api/chrono_data', methods=['GET'])
+def api_chrono_data():
+    """
+    API pour récupérer les données du timer/chrono
+    """
+    try:
+        if not controller.is_connected():
+            return jsonify({
+                'success': False,
+                'error': 'Poêle non connecté'
+            }), 500
+        
+        chrono_data = controller.get_chrono_data()
+        if chrono_data is None:
+            return jsonify({
+                'success': False,
+                'error': 'Échec de lecture des données du chrono'
+            }), 500
+        
+        return jsonify({
+            'success': True,
+            'data': chrono_data
+        })
+        
+    except Exception as e:
+        logger.error(f"Erreur API données chrono: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@app.route('/api/chrono_program', methods=['POST'])
+def api_set_chrono_program():
+    """
+    API pour configurer un programme de timer
+    """
+    try:
+        if not controller.is_connected():
+            return jsonify({
+                'success': False,
+                'error': 'Poêle non connecté'
+            }), 500
+        
+        data = request.get_json()
+        if not data:
+            return jsonify({
+                'success': False,
+                'error': 'Données JSON manquantes'
+            }), 400
+        
+        required_fields = ['program_number', 'start_hour', 'start_minute', 'stop_hour', 'stop_minute', 'setpoint']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({
+                    'success': False,
+                    'error': f'Champ manquant: {field}'
+                }), 400
+        
+        success = controller.set_chrono_program(
+            data['program_number'],
+            data['start_hour'],
+            data['start_minute'],
+            data['stop_hour'],
+            data['stop_minute'],
+            data['setpoint']
+        )
+        
+        if not success:
+            return jsonify({
+                'success': False,
+                'error': 'Échec de la configuration du programme'
+            }), 500
+        
+        return jsonify({
+            'success': True,
+            'message': f'Programme {data["program_number"]} configuré avec succès'
+        })
+        
+    except Exception as e:
+        logger.error(f"Erreur API configuration programme: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@app.route('/api/chrono_day', methods=['POST'])
+def api_set_chrono_day():
+    """
+    API pour configurer la programmation d'un jour
+    """
+    try:
+        if not controller.is_connected():
+            return jsonify({
+                'success': False,
+                'error': 'Poêle non connecté'
+            }), 500
+        
+        data = request.get_json()
+        if not data:
+            return jsonify({
+                'success': False,
+                'error': 'Données JSON manquantes'
+            }), 400
+        
+        required_fields = ['day_number', 'memory_1', 'memory_2', 'memory_3']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({
+                    'success': False,
+                    'error': f'Champ manquant: {field}'
+                }), 400
+        
+        success = controller.set_chrono_day(
+            data['day_number'],
+            data['memory_1'],
+            data['memory_2'],
+            data['memory_3']
+        )
+        
+        if not success:
+            return jsonify({
+                'success': False,
+                'error': 'Échec de la configuration du jour'
+            }), 500
+        
+        day_names = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']
+        day_name = day_names[data['day_number'] - 1]
+        
+        return jsonify({
+            'success': True,
+            'message': f'{day_name} configuré avec succès'
+        })
+        
+    except Exception as e:
+        logger.error(f"Erreur API configuration jour: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@app.route('/api/chrono_status', methods=['POST'])
+def api_set_chrono_status():
+    """
+    API pour activer/désactiver le timer
+    """
+    try:
+        if not controller.is_connected():
+            return jsonify({
+                'success': False,
+                'error': 'Poêle non connecté'
+            }), 500
+        
+        data = request.get_json()
+        if not data or 'enabled' not in data:
+            return jsonify({
+                'success': False,
+                'error': 'Champ "enabled" manquant'
+            }), 400
+        
+        success = controller.set_chrono_status(data['enabled'])
+        
+        if not success:
+            return jsonify({
+                'success': False,
+                'error': 'Échec de la modification du statut du timer'
+            }), 500
+        
+        status_text = 'activé' if data['enabled'] else 'désactivé'
+        return jsonify({
+            'success': True,
+            'message': f'Timer {status_text} avec succès'
+        })
+        
+    except Exception as e:
+        logger.error(f"Erreur API statut timer: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
         }), 500
 
 

@@ -216,6 +216,24 @@ def parse_status(data):
         22: ('ALARM', False)
     }
     
-    status_name, power_on = status_map.get(status_code, (f'STATUS_{status_code}', False))
+    # Gestion des codes d'erreur/statut numériques (241-254)
+    if status_code >= 241 and status_code <= 254:
+        error_status_map = {
+            241: ('E102', False),  # Conduit sale
+            244: ('E105', False),  # NTC2
+            245: ('E106', False),  # NTC3
+            246: ('E107', False),  # TC2
+            247: ('E108', False),  # Porte ou trémie ouverte
+            248: ('E109', False),  # Alarme pression
+            249: ('E110', False),  # Sonde température air
+            250: ('E111', False),  # Sonde température fumées
+            252: ('E113', False),  # Gaz surchauffés
+            253: ('E114', False),   # Plus de pellets
+            254: ('E115', False)    # Erreur générale
+        }
+        status_name, power_on = error_status_map.get(status_code, (f'ERROR_{status_code}', False))
+    else:
+        status_name, power_on = status_map.get(status_code, (f'STATUS_{status_code}', False))
+    
     return status_code, status_name, power_on
 

@@ -36,6 +36,15 @@ REGISTER_ERROR_CODE = [0x20, 0x1E]  # Code d'erreur du poêle
 REGISTER_ALARM_STATUS = [0x20, 0x1F]  # Statut des alarmes
 REGISTER_TIMER_SETTINGS = [0x20, 0x72]  # Paramètres utilisateur - Timer (0:Disable 1:Enable)
 
+# Registre de consommation de pellets
+REGISTER_PELLET_CONSUMPTION = [0x20, 0x02]  # Consommation totale de pellets (0x2002)
+
+# Registres pour le système de timer/chrono
+REGISTER_CHRONO_SETPOINTS = [0x80, 0x2D]  # Températures de consigne des programmes (0x802D)
+REGISTER_CHRONO_PROGRAMS = [0x80, 0x00]   # Programmes de timer (0x8000-0x8014)
+REGISTER_CHRONO_DAYS = [0x80, 0x18]       # Programmation par jour (0x8018-0x802A)
+REGISTER_CHRONO_STATUS = [0x20, 0x7E]     # Statut du timer (0x207E)
+
 # Codes de statut
 STATUS_OFF = 0x00
 STATUS_TEST_FIRE = 0x01
@@ -44,6 +53,7 @@ STATUS_BURNING = 0x06
 STATUS_COOLING = 0x09
 STATUS_STARTING = 0x11
 STATUS_ALARM = 0xFF
+STATUS_NO_PELLETS = 253  # E114: No pellets
 
 # Codes de commande de puissance
 POWER_OFF = 0x00
@@ -58,10 +68,17 @@ ERROR_NONE = 0x00
 ERROR_KEYBOARD = 0x01          # E001: Clavier défectueux
 ERROR_COMM_LINK = 0x04         # E004: Coupure liaison carte/clavier
 ERROR_IGNITION_FAILED = 0x101  # E101: Allumage raté
-ERROR_DOOR_OPEN = 0x108        # E108: Porte ou trémie ouverte
-ERROR_PRESSURE_ALARM = 0x109   # E109: Alarme pression/disjoncteur
-ERROR_AIR_TEMP_SENSOR = 0x110  # E110: Sonde température air
-ERROR_FLUE_TEMP_SENSOR = 0x111 # E111: Sonde température fumées
+ERROR_CHIMNEY_DIRTY = 0x102    # E102: Conduit sale (statut 241)
+ERROR_NTC2 = 0x105            # E105: Capteur température NTC2 (statut 244)
+ERROR_NTC3 = 0x106            # E106: Capteur température NTC3 (statut 245)
+ERROR_TC2 = 0x107             # E107: Capteur température TC2 (statut 246)
+ERROR_DOOR_OPEN = 0x108        # E108: Porte ou trémie ouverte (statut 247)
+ERROR_PRESSURE_ALARM = 0x109   # E109: Alarme pression/disjoncteur (statut 248)
+ERROR_AIR_TEMP_SENSOR = 0x110  # E110: Sonde température air (statut 249)
+ERROR_FLUE_TEMP_SENSOR = 0x111 # E111: Sonde température fumées (statut 250)
+ERROR_GASES_OVER_TEMP = 0x113  # E113: Gaz surchauffés (statut 252)
+ERROR_NO_PELLETS = 0x114       # E114: Pas de pellets (statut 253)
+ERROR_GENERAL = 0x115          # E115: Erreur générale (statut 254)
 
 # Mapping des statuts
 STATUS_MAP = {
@@ -71,7 +88,8 @@ STATUS_MAP = {
     STATUS_BURNING: 'BURNING',
     STATUS_COOLING: 'COOLING',
     STATUS_STARTING: 'STARTING',
-    STATUS_ALARM: 'ALARM'
+    STATUS_ALARM: 'ALARM',
+    STATUS_NO_PELLETS: 'NO_PELLETS'
 }
 
 # Mapping des codes d'erreur
@@ -80,9 +98,31 @@ ERROR_MAP = {
     ERROR_KEYBOARD: 'E001: Clavier de commande défectueux',
     ERROR_COMM_LINK: 'E004: Coupure de liaison carte/clavier',
     ERROR_IGNITION_FAILED: 'E101: Allumage raté (granulés ou braséro)',
+    ERROR_CHIMNEY_DIRTY: 'E102: Conduit sale (nettoyage requis)',
+    ERROR_NTC2: 'E105: Capteur température NTC2 défaillant',
+    ERROR_NTC3: 'E106: Capteur température NTC3 défaillant',
+    ERROR_TC2: 'E107: Capteur température TC2 défaillant',
     ERROR_DOOR_OPEN: 'E108: Porte ou trémie ouverte',
     ERROR_PRESSURE_ALARM: 'E109: Alarme pression/disjoncteur',
     ERROR_AIR_TEMP_SENSOR: 'E110: Dysfonctionnement sonde température air',
-    ERROR_FLUE_TEMP_SENSOR: 'E111: Dysfonctionnement sonde température fumées'
+    ERROR_FLUE_TEMP_SENSOR: 'E111: Dysfonctionnement sonde température fumées',
+    ERROR_GASES_OVER_TEMP: 'E113: Gaz surchauffés (nettoyage conduit)',
+    ERROR_NO_PELLETS: 'E114: Plus de pellets',
+    ERROR_GENERAL: 'E115: Erreur générale (appeler service)'
+}
+
+# Mapping des codes de statut numériques vers les messages d'erreur
+STATUS_ERROR_MAP = {
+    241: 'E102: Conduit sale (nettoyage requis)',
+    244: 'E105: Capteur température NTC2 défaillant',
+    245: 'E106: Capteur température NTC3 défaillant',
+    246: 'E107: Capteur température TC2 défaillant',
+    247: 'E108: Porte ou trémie ouverte',
+    248: 'E109: Alarme pression/disjoncteur',
+    249: 'E110: Dysfonctionnement sonde température air',
+    250: 'E111: Dysfonctionnement sonde température fumées',
+    252: 'E113: Gaz surchauffés (nettoyage conduit)',
+    253: 'E114: Plus de pellets',
+    254: 'E115: Erreur générale (appeler service)'
 }
 

@@ -32,6 +32,8 @@ Ce projet est un contrôleur pour poêle à pellets Palazzetti qui communique vi
 - **Vérification de connexion renforcée** : Test de communication avant retour d'état pour éviter les données en cache quand déconnecté
 - **Définition de température améliorée** : Logique plus permissive pour éviter les erreurs quand la commande est envoyée avec succès
 - **Timeout de test de connexion configurable** : Variable d'environnement `CONNECTION_TEST_TIMEOUT` (défaut: 5s) pour le test de synchronisation
+- **Interface mobile améliorée** : Barre de température agrandie, boutons + et - pour incrémenter/décrémenter, valeur de consigne repositionnée au-dessus
+- **Affichage du timer** : Icône ⏰ affichée quand `timer_enabled = true` pour indiquer que le timer est activé
 
 ## Architecture technique
 - **Backend** : Flask (Socket.IO supprimé)
@@ -62,13 +64,77 @@ Ce projet est un contrôleur pour poêle à pellets Palazzetti qui communique vi
 6. **Test de connexion** : Amélioré pour détecter l'absence de câble
 7. **Gestion de déconnexion** : Erreur spécifique affichée quand le câble est déconnecté
 
+## Nouvelles fonctionnalités implémentées
+### Gestion du Timer/Chrono
+- **Fonctionnalité** : Page de visualisation et paramétrage du timer du poêle
+- **Objectif** : Permettre la configuration des heures d'allumage et d'éteignage automatiques
+- **Statut** : ✅ Implémenté et fonctionnel
+- **Fonctionnalités** :
+  - Visualisation des 6 programmes de timer disponibles
+  - Affichage des heures de démarrage/arrêt et températures de consigne
+  - Programmation par jour de la semaine (7 jours, 3 mémoires par jour)
+  - Activation/désactivation du timer via toggle
+  - Interface responsive et intuitive
+- **API endpoints** :
+  - `GET /api/chrono_data` : Récupérer toutes les données du timer
+  - `POST /api/chrono_program` : Configurer un programme de timer
+  - `POST /api/chrono_day` : Configurer la programmation d'un jour
+  - `POST /api/chrono_status` : Activer/désactiver le timer
+- **Navigation** : Lien "⏰ Timer" ajouté dans le menu principal
+- **Page** : `/timer` - Interface complète de gestion du timer
+
+### Suivi de Consommation de Pellets
+- **Spécification** : `docs/specification_consommation_pellets.md`
+- **Objectif** : Afficher la consommation de pellets en temps réel et historique
+- **Statut** : En phase de recherche (identification du registre)
+- **Prochaines étapes** :
+  1. Identifier l'adresse du registre de consommation dans le protocole Palazzetti
+  2. Tester la lecture et valider le format des données
+  3. Implémenter l'API backend
+  4. Créer le widget d'affichage dans l'interface
+  5. Ajouter le système d'historique et de stockage
+
 ## Commandes utiles
 - **Démarrage** : `python app.py` dans le dossier `raspberry_pi/`
 - **Installation service** : Scripts dans `raspberry_pi/service/`
 - **Tests** : Scripts de test dans le dossier `tests/`
+
+## Fonctionnement du système de Timer/Chrono
+
+### Structure des données
+Le système de timer utilise plusieurs structures de données :
+
+1. **Programmes de timer** (6 programmes disponibles) :
+   - Chaque programme contient :
+     - Heure de démarrage (0-23)
+     - Minute de démarrage (0-59)
+     - Heure d'arrêt (0-23)
+     - Minute d'arrêt (0-59)
+     - Température de consigne pour ce programme
+
+2. **Programmation par jour** (7 jours de la semaine) :
+   - Chaque jour peut avoir 3 mémoires (M1, M2, M3)
+   - Chaque mémoire référence un programme (0-6, 0 = aucun programme)
+
+3. **Statut du timer** :
+   - Bit 0 : Timer activé (1) ou désactivé (0)
+
+### Adresses mémoire
+- **0x802D** : Températures de consigne des programmes
+- **0x8000-0x8014** : Heures de démarrage/arrêt des programmes (4 bytes par programme)
+- **0x8018-0x802A** : Programmation par jour (3 bytes par jour)
+- **0x207E** : Statut du timer (activation/désactivation)
+
+### Logique de fonctionnement
+1. Le timer peut être activé/désactivé globalement
+2. Quand activé, le poêle suit la programmation par jour
+3. Chaque jour peut avoir jusqu'à 3 créneaux de fonctionnement
+4. Chaque créneau référence un programme avec ses heures et température
+5. Le poêle s'allume/éteint automatiquement selon la programmation
 
 ## Notes importantes
 - Le poêle fonctionne en mode automatique basé sur la température
 - L'interface ne permet que de modifier la consigne de température
 - La lecture d'état se fait uniquement à la demande (pas de polling automatique)
 - Le protocole de communication est documenté dans `docs/protocole_palazzeti.md`
+- Le système de timer permet une programmation hebdomadaire complète

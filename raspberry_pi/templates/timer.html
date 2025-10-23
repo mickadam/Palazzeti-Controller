@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timer Poêle Palazzetti</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;x
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .nav-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .nav-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 2px solid rgba(255,255,255,0.3);
+            padding: 12px 24px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .nav-btn:hover {
+            background: rgba(255,255,255,0.3);
+            border-color: rgba(255,255,255,0.5);
+            transform: translateY(-2px);
+        }
+
+        .nav-btn.active {
+            background: rgba(255,255,255,0.4);
+            border-color: white;
+        }
+
+        .status-card {
+            background: rgba(255,255,255,0.95);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .status-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .status-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .timer-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 60px;
+            height: 30px;
+            background: #ccc;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .toggle-switch.active {
+            background: #4CAF50;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 24px;
+            height: 24px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .toggle-switch.active .toggle-slider {
+            transform: translateX(30px);
+        }
+
+        .status-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: rgba(0,0,0,0.05);
+            border-radius: 10px;
+        }
+
+        .status-label {
+            font-weight: 600;
+            color: #555;
+        }
+
+        .status-value {
+            font-weight: 700;
+            color: #333;
+        }
+
+        .programs-section {
+            background: rgba(255,255,255,0.95);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .programs-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .program-card {
+            background: rgba(0,0,0,0.05);
+            border-radius: 15px;
+            padding: 20px;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .program-card:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
+        }
+
+        .program-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .program-number {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .program-times {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .time-group {
+            text-align: center;
+        }
+
+        .time-label {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .time-value {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .program-setpoint {
+            text-align: center;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #e74c3c;
+        }
+
+        .days-section {
+            background: rgba(255,255,255,0.95);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .days-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .day-card {
+            background: rgba(0,0,0,0.05);
+            border-radius: 15px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .day-name {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .day-memories {
+            display: flex;
+            justify-content: space-around;
+            gap: 5px;
+        }
+
+        .memory {
+            background: #667eea;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            min-width: 30px;
+        }
+
+        .memory.zero {
+            background: #ccc;
+            color: #666;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 4px solid #c62828;
+        }
+
+        .success {
+            background: #e8f5e8;
+            color: #2e7d32;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 4px solid #2e7d32;
+        }
+
+        .refresh-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 20px auto;
+            display: block;
+        }
+
+        .refresh-btn:hover {
+            background: #5a6fd8;
+            transform: translateY(-2px);
+        }
+
+        .refresh-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .nav-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .programs-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .days-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⏰ Timer Poêle</h1>
+            <p>Gestion des programmes de chauffage automatique</p>
+        </div>
+
+        <div class="nav-buttons">
+            <a href="/" class="nav-btn">🏠 Accueil</a>
+            <a href="/timer" class="nav-btn active">⏰ Timer</a>
+        </div>
+
+        <div id="loading" class="loading">
+            <p>Chargement des données du timer...</p>
+        </div>
+
+        <div id="error" class="error" style="display: none;">
+            <p id="error-message"></p>
+        </div>
+
+        <div id="success" class="success" style="display: none;">
+            <p id="success-message"></p>
+        </div>
+
+        <div id="content" style="display: none;">
+            <!-- Statut du timer -->
+            <div class="status-card">
+                <div class="status-header">
+                    <h2 class="status-title">Statut du Timer</h2>
+                    <div class="timer-toggle">
+                        <span id="timer-status-text">Désactivé</span>
+                        <div class="toggle-switch" id="timer-toggle">
+                            <div class="toggle-slider"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="status-info">
+                    <div class="status-item">
+                        <span class="status-label">État</span>
+                        <span class="status-value" id="timer-state">Désactivé</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Programmes configurés</span>
+                        <span class="status-value" id="programs-count">0/6</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Programmes de timer -->
+            <div class="programs-section">
+                <h2 class="section-title">Programmes de Timer</h2>
+                <div class="programs-grid" id="programs-grid">
+                    <!-- Les programmes seront générés dynamiquement -->
+                </div>
+            </div>
+
+            <!-- Programmation par jour -->
+            <div class="days-section">
+                <h2 class="section-title">Programmation par Jour</h2>
+                <div class="days-grid" id="days-grid">
+                    <!-- Les jours seront générés dynamiquement -->
+                </div>
+            </div>
+
+            <button class="refresh-btn" onclick="loadChronoData()">
+                🔄 Rafraîchir les données
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let chronoData = null;
+
+        // Charger les données du chrono au démarrage
+        document.addEventListener('DOMContentLoaded', function() {
+            loadChronoData();
+        });
+
+        async function loadChronoData() {
+            const loading = document.getElementById('loading');
+            const content = document.getElementById('content');
+            const error = document.getElementById('error');
+            const success = document.getElementById('success');
+
+            // Afficher le loading
+            loading.style.display = 'block';
+            content.style.display = 'none';
+            error.style.display = 'none';
+            success.style.display = 'none';
+
+            try {
+                const response = await fetch('/api/chrono_data');
+                const result = await response.json();
+
+                if (result.success) {
+                    chronoData = result.data;
+                    displayChronoData();
+                    loading.style.display = 'none';
+                    content.style.display = 'block';
+                } else {
+                    throw new Error(result.error || 'Erreur inconnue');
+                }
+            } catch (err) {
+                console.error('Erreur lors du chargement des données:', err);
+                loading.style.display = 'none';
+                error.style.display = 'block';
+                document.getElementById('error-message').textContent = 
+                    'Erreur lors du chargement des données: ' + err.message;
+            }
+        }
+
+        function displayChronoData() {
+            if (!chronoData) return;
+
+            // Mettre à jour le statut du timer
+            updateTimerStatus(chronoData.timer_enabled);
+
+            // Afficher les programmes
+            displayPrograms(chronoData.programs);
+
+            // Afficher les jours
+            displayDays(chronoData.days);
+        }
+
+        function updateTimerStatus(enabled) {
+            const toggle = document.getElementById('timer-toggle');
+            const statusText = document.getElementById('timer-status-text');
+            const stateText = document.getElementById('timer-state');
+
+            if (enabled) {
+                toggle.classList.add('active');
+                statusText.textContent = 'Activé';
+                stateText.textContent = 'Activé';
+            } else {
+                toggle.classList.remove('active');
+                statusText.textContent = 'Désactivé';
+                stateText.textContent = 'Désactivé';
+            }
+
+            // Compter les programmes configurés
+            const programsCount = chronoData.programs.filter(p => 
+                p.start_hour !== 0 || p.start_minute !== 0 || 
+                p.stop_hour !== 0 || p.stop_minute !== 0
+            ).length;
+            document.getElementById('programs-count').textContent = `${programsCount}/6`;
+        }
+
+        function displayPrograms(programs) {
+            const grid = document.getElementById('programs-grid');
+            grid.innerHTML = '';
+
+            programs.forEach(program => {
+                const card = document.createElement('div');
+                card.className = 'program-card';
+                
+                const isConfigured = program.start_hour !== 0 || program.start_minute !== 0 || 
+                                   program.stop_hour !== 0 || program.stop_minute !== 0;
+
+                card.innerHTML = `
+                    <div class="program-header">
+                        <span class="program-number">Programme ${program.number}</span>
+                        <span style="color: ${isConfigured ? '#4CAF50' : '#999'}; font-size: 0.9rem;">
+                            ${isConfigured ? '✓ Configuré' : '○ Vide'}
+                        </span>
+                    </div>
+                    <div class="program-times">
+                        <div class="time-group">
+                            <div class="time-label">Démarrage</div>
+                            <div class="time-value">${formatTime(program.start_hour, program.start_minute)}</div>
+                        </div>
+                        <div class="time-group">
+                            <div class="time-label">Arrêt</div>
+                            <div class="time-value">${formatTime(program.stop_hour, program.stop_minute)}</div>
+                        </div>
+                    </div>
+                    <div class="program-setpoint">
+                        ${program.setpoint > 0 ? program.setpoint.toFixed(1) + '°C' : 'Non défini'}
+                    </div>
+                `;
+
+                grid.appendChild(card);
+            });
+        }
+
+        function displayDays(days) {
+            const grid = document.getElementById('days-grid');
+            grid.innerHTML = '';
+
+            days.forEach(day => {
+                const card = document.createElement('div');
+                card.className = 'day-card';
+                
+                card.innerHTML = `
+                    <div class="day-name">${day.day_name}</div>
+                    <div class="day-memories">
+                        <span class="memory ${day.memory_1 === 0 ? 'zero' : ''}">M1: ${day.memory_1}</span>
+                        <span class="memory ${day.memory_2 === 0 ? 'zero' : ''}">M2: ${day.memory_2}</span>
+                        <span class="memory ${day.memory_3 === 0 ? 'zero' : ''}">M3: ${day.memory_3}</span>
+                    </div>
+                `;
+
+                grid.appendChild(card);
+            });
+        }
+
+        function formatTime(hour, minute) {
+            if (hour === 0 && minute === 0) {
+                return '--:--';
+            }
+            return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+        }
+
+        // Gestion du toggle du timer
+        document.getElementById('timer-toggle').addEventListener('click', async function() {
+            if (!chronoData) return;
+
+            const newStatus = !chronoData.timer_enabled;
+            
+            try {
+                const response = await fetch('/api/chrono_status', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ enabled: newStatus })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    chronoData.timer_enabled = newStatus;
+                    updateTimerStatus(newStatus);
+                    showSuccess(result.message);
+                } else {
+                    throw new Error(result.error || 'Erreur inconnue');
+                }
+            } catch (err) {
+                console.error('Erreur lors de la modification du statut:', err);
+                showError('Erreur lors de la modification du statut: ' + err.message);
+            }
+        });
+
+        function showSuccess(message) {
+            const success = document.getElementById('success');
+            const successMessage = document.getElementById('success-message');
+            successMessage.textContent = message;
+            success.style.display = 'block';
+            setTimeout(() => {
+                success.style.display = 'none';
+            }, 3000);
+        }
+
+        function showError(message) {
+            const error = document.getElementById('error');
+            const errorMessage = document.getElementById('error-message');
+            errorMessage.textContent = message;
+            error.style.display = 'block';
+            setTimeout(() => {
+                error.style.display = 'none';
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
