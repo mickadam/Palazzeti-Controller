@@ -1,83 +1,17 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Timer Poêle Palazzetti</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+{% extends "base.html" %}
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            color: #333;
-        }
+{% block title %}Timer Poêle Palazzetti{% endblock %}
+{% block subtitle %}Gestion des programmes de chauffage automatique{% endblock %}
+{% block timer_active %}active{% endblock %}
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
+{% block extra_css %}
+<style>
+        /* Styles spécifiques à la page timer */
 
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-            color: white;
-        }
 
-        .header h1 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-        }
-
-        .header p {
-            font-size: 1.1rem;
-            opacity: 0.9;
-        }
-
-        .nav-buttons {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            margin-bottom: 30px;
-        }
-
-        .nav-btn {
-            background: rgba(255,255,255,0.2);
-            color: white;
-            border: 2px solid rgba(255,255,255,0.3);
-            padding: 12px 24px;
-            border-radius: 25px;
-            text-decoration: none;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            -webkit-backdrop-filter: blur(10px);
-            backdrop-filter: blur(10px);
-        }
-
-        .nav-btn:hover {
-            background: rgba(255,255,255,0.3);
-            border-color: rgba(255,255,255,0.5);
-            transform: translateY(-2px);
-        }
-
-        .nav-btn.active {
-            background: rgba(255,255,255,0.4);
-            border-color: white;
-        }
-
+        /* Styles spécifiques pour les cartes de la page timer */
         .status-card {
             background: rgba(255,255,255,0.95);
-            border-radius: 20px;
-            padding: 25px;
-            margin-bottom: 30px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
             -webkit-backdrop-filter: blur(10px);
             backdrop-filter: blur(10px);
         }
@@ -158,10 +92,6 @@
 
         .programs-section {
             background: rgba(255,255,255,0.95);
-            border-radius: 20px;
-            padding: 25px;
-            margin-bottom: 30px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
             -webkit-backdrop-filter: blur(10px);
             backdrop-filter: blur(10px);
         }
@@ -176,8 +106,31 @@
 
         .programs-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+
+        /* Mobile first - styles par défaut pour mobile */
+        @media (max-width: 480px) {
+            .programs-grid {
+                gap: 10px;
+            }
+        }
+
+        /* Tablette */
+        @media (min-width: 481px) and (max-width: 768px) {
+            .programs-grid {
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                gap: 15px;
+            }
+        }
+
+        /* Desktop */
+        @media (min-width: 769px) {
+            .programs-grid {
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                gap: 20px;
+            }
         }
 
         .program-card {
@@ -239,18 +192,37 @@
 
         .days-section {
             background: rgba(255,255,255,0.95);
-            border-radius: 20px;
-            padding: 25px;
-            margin-bottom: 30px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
             -webkit-backdrop-filter: blur(10px);
             backdrop-filter: blur(10px);
         }
 
         .days-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 15px;
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+
+        /* Mobile first - styles par défaut pour mobile */
+        @media (max-width: 480px) {
+            .days-grid {
+                gap: 8px;
+            }
+        }
+
+        /* Tablette */
+        @media (min-width: 481px) and (max-width: 768px) {
+            .days-grid {
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 12px;
+            }
+        }
+
+        /* Desktop */
+        @media (min-width: 769px) {
+            .days-grid {
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                gap: 15px;
+            }
         }
 
         .day-card {
@@ -291,26 +263,35 @@
         .loading {
             text-align: center;
             padding: 40px;
-            color: #666;
+            color: #333;
             font-size: 1.1rem;
+            font-weight: 600;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            margin: 20px 0;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
         }
 
         .error {
             background: #ffebee;
             color: #c62828;
             padding: 15px;
-            border-radius: 10px;
+            border-radius: 15px;
             margin: 20px 0;
             border-left: 4px solid #c62828;
+            font-weight: 600;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
         }
 
         .success {
             background: #e8f5e8;
             color: #2e7d32;
             padding: 15px;
-            border-radius: 10px;
+            border-radius: 15px;
             margin: 20px 0;
             border-left: 4px solid #2e7d32;
+            font-weight: 600;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
         }
 
         .refresh-btn {
@@ -340,10 +321,6 @@
         /* Timeline Styles */
         .timeline-section {
             background: rgba(255,255,255,0.95);
-            border-radius: 20px;
-            padding: 25px;
-            margin-bottom: 30px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
             -webkit-backdrop-filter: blur(10px);
             backdrop-filter: blur(10px);
         }
@@ -484,41 +461,10 @@
             font-style: italic;
         }
 
-        @media (max-width: 768px) {
-            .container {
-                padding: 10px;
-            }
-
-            .header h1 {
-                font-size: 2rem;
-            }
-
-            .nav-buttons {
-                flex-direction: column;
-                align-items: center;
-            }
-
-            .programs-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .days-grid {
-                grid-template-columns: 1fr;
-            }
-        }
     </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>⏰ Timer Poêle</h1>
-            <p>Gestion des programmes de chauffage automatique</p>
-        </div>
+{% endblock %}
 
-        <div class="nav-buttons">
-            <a href="/" class="nav-btn">🏠 Accueil</a>
-            <a href="/timer" class="nav-btn active">⏰ Timer</a>
-        </div>
+{% block content %}
 
         <div id="loading" class="loading">
             <p>Chargement des données du timer...</p>
@@ -602,9 +548,10 @@
                 🔄 Rafraîchir les données
             </button>
         </div>
-    </div>
+{% endblock %}
 
-    <script>
+{% block extra_js %}
+<script>
         let chronoData = null;
         let selectedDay = 0; // 0 = Lundi, 1 = Mardi, etc.
 
@@ -626,7 +573,7 @@
             success.style.display = 'none';
 
             try {
-                const response = await fetch('/api/chrono_data');
+                const response = await fetchWithCancellation('/api/chrono_data');
                 const result = await response.json();
 
                 if (result.success) {
@@ -638,11 +585,13 @@
                     throw new Error(result.error || 'Erreur inconnue');
                 }
             } catch (err) {
-                console.error('Erreur lors du chargement des données:', err);
-                loading.style.display = 'none';
-                error.style.display = 'block';
-                document.getElementById('error-message').textContent = 
-                    'Erreur lors du chargement des données: ' + err.message;
+                if (err.name !== 'AbortError') {
+                    console.error('Erreur lors du chargement des données:', err);
+                    loading.style.display = 'none';
+                    error.style.display = 'block';
+                    document.getElementById('error-message').textContent = 
+                        'Erreur lors du chargement des données: ' + err.message;
+                }
             }
         }
 
@@ -757,7 +706,7 @@
             const newStatus = !chronoData.timer_enabled;
             
             try {
-                const response = await fetch('/api/chrono_status', {
+                const response = await fetchWithCancellation('/api/chrono_status', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -775,8 +724,10 @@
                     throw new Error(result.error || 'Erreur inconnue');
                 }
             } catch (err) {
-                console.error('Erreur lors de la modification du statut:', err);
-                showError('Erreur lors de la modification du statut: ' + err.message);
+                if (err.name !== 'AbortError') {
+                    console.error('Erreur lors de la modification du statut:', err);
+                    showError('Erreur lors de la modification du statut: ' + err.message);
+                }
             }
         });
 
@@ -975,5 +926,4 @@
             }
         }
     </script>
-</body>
-</html>
+{% endblock %}

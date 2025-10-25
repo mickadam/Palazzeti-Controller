@@ -17,6 +17,7 @@ class PalazzettiController:
     def __init__(self):
         self.communicator = SerialCommunicator()
         self.state_lock = threading.Lock()  # Sémaphore pour get_state()
+        self.communication_lock = threading.Lock()  # Sémaphore pour les communications série
         self.last_state_read = 0  # Timestamp de la dernière lecture
         self.state_cache_duration = 10  # Durée du cache en secondes
         self.state = {
@@ -140,92 +141,95 @@ class PalazzettiController:
             self.state['error_message'] = 'Connexion série perdue - vérifiez le câble'
             return self.state
         
-        try:
-            logger.info("Lecture de l'état du poêle...")
-            
-            # Lire le statut
-            logger.debug("Lecture du registre statut...")
-            total_reads += 1
-            status_frame = self.communicator.send_read_command(REGISTER_STATUS)
-            if status_frame:
-                status_code, status_name, power_on = parse_status(status_frame.get_data())
-                self.state['status'] = status_name
-                self.state['power'] = power_on
-                successful_reads += 1
-                logger.debug(f"Statut lu: {status_name}, Puissance: {'ON' if power_on else 'OFF'}")
-            else:
-                logger.warning("Échec de lecture du registre statut")
-            
-            # Lire la température actuelle
-            logger.debug("Lecture du registre température...")
-            total_reads += 1
-            temp_frame = self.communicator.send_read_command(REGISTER_TEMPERATURE)
-            if temp_frame:
-                temperature = parse_temperature(temp_frame.get_data())
-                self.state['temperature'] = temperature
-                successful_reads += 1
-                logger.debug(f"Température lue: {temperature}°C")
-            else:
-                logger.warning("Échec de lecture du registre température")
-            
-            # Lire la température de consigne avec fluide type 0 (granulés)
-            logger.debug("Lecture du registre consigne...")
-            total_reads += 1
-            setpoint_result = self.get_setpoint()
-            if setpoint_result:
-                setpoint, seco = setpoint_result
-                self.state['setpoint'] = setpoint
-                self.state['seco'] = seco
-                successful_reads += 1
-                logger.debug(f"Consigne lue: {setpoint}°C, Seuil: {seco}°C")
-            else:
-                logger.warning("Échec de lecture du registre consigne")
-            
-            # Lire le code d'erreur
-            logger.debug("Lecture du registre code d'erreur...")
-            error_frame = self.communicator.send_read_command(REGISTER_ERROR_CODE)
-            if error_frame:
-                error_code = error_frame.get_data()[0]
-                self.state['error_code'] = error_code
-                # Essayer d'abord le mapping des codes de statut numériques, puis le mapping des codes d'erreur
-                self.state['error_message'] = STATUS_ERROR_MAP.get(error_code, 
-                    ERROR_MAP.get(error_code, f'Erreur inconnue: {error_code}'))
-                logger.debug(f"Code d'erreur lu: {error_code} - {self.state['error_message']}")
-            else:
-                logger.warning("Échec de lecture du registre code d'erreur")
-            
-            # Lire le niveau de puissance
-            logger.debug("Lecture du registre niveau de puissance...")
-            power_level_frame = self.communicator.send_read_command(REGISTER_POWER_LEVEL)
-            if power_level_frame:
-                power_level = power_level_frame.get_data()[0]
-                self.state['power_level'] = power_level
-                logger.debug(f"Niveau de puissance lu: {power_level}/5")
-            else:
-                logger.warning("Échec de lecture du registre niveau de puissance")
-            
-            # Lire le statut des alarmes
-            logger.debug("Lecture du registre statut des alarmes...")
-            alarm_frame = self.communicator.send_read_command(REGISTER_ALARM_STATUS)
-            if alarm_frame:
-                alarm_status = alarm_frame.get_data()[0]
-                self.state['alarm_status'] = alarm_status
-                logger.debug(f"Statut des alarmes lu: {alarm_status}")
-            else:
-                logger.warning("Échec de lecture du registre statut des alarmes")
-            
-            # Lire les paramètres du timer
-            logger.debug("Lecture du registre paramètres timer...")
-            timer_frame = self.communicator.send_read_command(REGISTER_TIMER_SETTINGS)
-            if timer_frame:
-                timer_settings = timer_frame.get_data()[0]
-                self.state['timer_enabled'] = timer_settings == TIMER_ENABLE
-                logger.debug(f"Paramètres timer lus: {'Activé' if timer_settings == TIMER_ENABLE else 'Désactivé'}")
-            else:
-                logger.warning("Échec de lecture du registre paramètres timer")
+        # Utiliser le sémaphore de communication pour éviter les conflits
+        with self.communication_lock:
+            try:
+                logger.info("Lecture de l'état du poêle...")
                 
-        except Exception as e:
-            logger.error(f"Erreur lors de la lecture de l'état: {e}")
+                # Lire le statut
+                logger.debug("Lecture du registre statut...")
+                total_reads += 1
+                status_code = None  # Initialiser la variable
+                status_frame = self.communicator.send_read_command(REGISTER_STATUS)
+                if status_frame:
+                    status_code, status_name, power_on = parse_status(status_frame.get_data())
+                    self.state['status'] = status_name
+                    self.state['power'] = power_on
+                    successful_reads += 1
+                    logger.debug(f"Statut lu: {status_name}, Puissance: {'ON' if power_on else 'OFF'}")
+                    
+                    # Si le statut indique une erreur (codes 241-254), mettre à jour l'erreur
+                    if status_code >= 241 and status_code <= 254:
+                        self.state['error_code'] = status_code
+                        self.state['error_message'] = STATUS_ERROR_MAP.get(status_code, f'Erreur inconnue: {status_code}')
+                        logger.info(f"Erreur détectée via statut: {status_code} - {self.state['error_message']}")
+                else:
+                    logger.warning("Échec de lecture du registre statut")
+                
+                # Lire la température actuelle
+                logger.debug("Lecture du registre température...")
+                total_reads += 1
+                temp_frame = self.communicator.send_read_command(REGISTER_TEMPERATURE)
+                if temp_frame:
+                    temperature = parse_temperature(temp_frame.get_data())
+                    self.state['temperature'] = temperature
+                    successful_reads += 1
+                    logger.debug(f"Température lue: {temperature}°C")
+                else:
+                    logger.warning("Échec de lecture du registre température")
+                
+                # Lire la température de consigne avec fluide type 0 (granulés)
+                logger.debug("Lecture du registre consigne...")
+                total_reads += 1
+                setpoint_result = self.get_setpoint()
+                if setpoint_result:
+                    setpoint, seco = setpoint_result
+                    self.state['setpoint'] = setpoint
+                    self.state['seco'] = seco
+                    successful_reads += 1
+                    logger.debug(f"Consigne lue: {setpoint}°C, Seuil: {seco}°C")
+                else:
+                    logger.warning("Échec de lecture du registre consigne")
+                
+                # Lire le code d'erreur seulement si aucune erreur n'a été détectée via le statut
+                if not (status_code and status_code >= 241 and status_code <= 254):
+                    logger.debug("Lecture du registre code d'erreur...")
+                    error_frame = self.communicator.send_read_command(REGISTER_ERROR_CODE)
+                    if error_frame:
+                        error_code = error_frame.get_data()[0]
+                        self.state['error_code'] = error_code
+                        # Essayer d'abord le mapping des codes de statut numériques, puis le mapping des codes d'erreur
+                        self.state['error_message'] = STATUS_ERROR_MAP.get(error_code, 
+                            ERROR_MAP.get(error_code, f'Erreur inconnue: {error_code}'))
+                        logger.debug(f"Code d'erreur lu: {error_code} - {self.state['error_message']}")
+                    else:
+                        logger.warning("Échec de lecture du registre code d'erreur")
+                else:
+                    logger.debug("Erreur déjà détectée via le statut, pas besoin de lire le registre d'erreur")
+                
+                
+                # Lire le statut des alarmes
+                logger.debug("Lecture du registre statut des alarmes...")
+                alarm_frame = self.communicator.send_read_command(REGISTER_ALARM_STATUS)
+                if alarm_frame:
+                    alarm_status = alarm_frame.get_data()[0]
+                    self.state['alarm_status'] = alarm_status
+                    logger.debug(f"Statut des alarmes lu: {alarm_status}")
+                else:
+                    logger.warning("Échec de lecture du registre statut des alarmes")
+                
+                # Lire le statut du timer
+                logger.debug("Lecture du registre statut timer...")
+                timer_frame = self.communicator.send_read_command(REGISTER_CHRONO_STATUS)
+                if timer_frame:
+                    timer_status = timer_frame.get_data()[0]
+                    self.state['timer_enabled'] = (timer_status & 0x01) == 1
+                    logger.debug(f"Statut timer lu: {'Activé' if self.state['timer_enabled'] else 'Désactivé'}")
+                else:
+                    logger.warning("Échec de lecture du registre statut timer")
+                    
+            except Exception as e:
+                logger.error(f"Erreur lors de la lecture de l'état: {e}")
         
         # Calculer le temps de lecture
         end_time = time.time()
@@ -315,12 +319,14 @@ class PalazzettiController:
             return False
             
         try:
-            # Convertir la température en bytes (température * 5 sur 1 octet)
-            temp_raw = int(temperature * 5)
-            value_bytes = [temp_raw & 0xFF]
-            
-            # Envoyer la commande d'écriture
-            response = self.communicator.send_write_command(REGISTER_SETPOINT, value_bytes)
+            # Utiliser le sémaphore de communication pour éviter les conflits
+            with self.communication_lock:
+                # Convertir la température en bytes (température * 5 sur 1 octet)
+                temp_raw = int(temperature * 5)
+                value_bytes = [temp_raw & 0xFF]
+                
+                # Envoyer la commande d'écriture
+                response = self.communicator.send_write_command(REGISTER_SETPOINT, value_bytes)
             
             # Mettre à jour l'état local même si la réponse n'est pas parfaite
             # car la commande peut avoir été envoyée avec succès
@@ -419,75 +425,77 @@ class PalazzettiController:
             
             logger.debug("Lecture des données du chrono...")
             
-            # Lire les températures de consigne des programmes (0x802D)
-            setpoints_frame = self.communicator.send_read_command(REGISTER_CHRONO_SETPOINTS)
-            if not setpoints_frame:
-                logger.warning("Échec de lecture des températures de consigne des programmes")
-                return None
-            
-            setpoints_data = setpoints_frame.get_data()
-            
-            # Lire les programmes de timer (0x8000-0x8014)
-            programs = []
-            for i in range(6):  # 6 programmes
-                addr = [REGISTER_CHRONO_PROGRAMS[0], REGISTER_CHRONO_PROGRAMS[1] + i * 4]
-                program_frame = self.communicator.send_read_command(addr)
-                if not program_frame:
-                    logger.warning(f"Échec de lecture du programme {i+1}")
+            # Utiliser le sémaphore de communication pour éviter les conflits
+            with self.communication_lock:
+                # Lire les températures de consigne des programmes (0x802D)
+                setpoints_frame = self.communicator.send_read_command(REGISTER_CHRONO_SETPOINTS)
+                if not setpoints_frame:
+                    logger.warning("Échec de lecture des températures de consigne des programmes")
                     return None
                 
-                program_data = program_frame.get_data()
-                program = {
-                    'number': i + 1,
-                    'start_hour': program_data[0],
-                    'start_minute': program_data[1],
-                    'stop_hour': program_data[2],
-                    'stop_minute': program_data[3],
-                    'setpoint': setpoints_data[i] / 5.0 if setpoints_data[i] > 0 else 0  # Conversion pour fluide type 0
-                }
-                programs.append(program)
-            
-            # Lire la programmation par jour (0x8018-0x802A)
-            days = []
-            for i in range(7):  # 7 jours
-                addr = [REGISTER_CHRONO_DAYS[0], REGISTER_CHRONO_DAYS[1] + i * 3]
-                day_frame = self.communicator.send_read_command(addr)
-                if not day_frame:
-                    logger.warning(f"Échec de lecture du jour {i+1}")
+                setpoints_data = setpoints_frame.get_data()
+                
+                # Lire les programmes de timer (0x8000-0x8014)
+                programs = []
+                for i in range(6):  # 6 programmes
+                    addr = [REGISTER_CHRONO_PROGRAMS[0], REGISTER_CHRONO_PROGRAMS[1] + i * 4]
+                    program_frame = self.communicator.send_read_command(addr)
+                    if not program_frame:
+                        logger.warning(f"Échec de lecture du programme {i+1}")
+                        return None
+                    
+                    program_data = program_frame.get_data()
+                    program = {
+                        'number': i + 1,
+                        'start_hour': program_data[0],
+                        'start_minute': program_data[1],
+                        'stop_hour': program_data[2],
+                        'stop_minute': program_data[3],
+                        'setpoint': setpoints_data[i] / 5.0 if setpoints_data[i] > 0 else 0  # Conversion pour fluide type 0
+                    }
+                    programs.append(program)
+                
+                # Lire la programmation par jour (0x8018-0x802A)
+                days = []
+                for i in range(7):  # 7 jours
+                    addr = [REGISTER_CHRONO_DAYS[0], REGISTER_CHRONO_DAYS[1] + i * 3]
+                    day_frame = self.communicator.send_read_command(addr)
+                    if not day_frame:
+                        logger.warning(f"Échec de lecture du jour {i+1}")
+                        return None
+                    
+                    day_data = day_frame.get_data()
+                    day = {
+                        'day_number': i + 1,
+                        'day_name': ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'][i],
+                        'memory_1': day_data[0],
+                        'memory_2': day_data[1],
+                        'memory_3': day_data[2]
+                    }
+                    days.append(day)
+                
+                # Lire le statut du timer (0x207E)
+                status_frame = self.communicator.send_read_command(REGISTER_CHRONO_STATUS)
+                if not status_frame:
+                    logger.warning("Échec de lecture du statut du timer")
                     return None
                 
-                day_data = day_frame.get_data()
-                day = {
-                    'day_number': i + 1,
-                    'day_name': ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'][i],
-                    'memory_1': day_data[0],
-                    'memory_2': day_data[1],
-                    'memory_3': day_data[2]
+                status_data = status_frame.get_data()
+                timer_enabled = (status_data[0] & 0x01) == 1
+                
+                chrono_data = {
+                    'timer_enabled': timer_enabled,
+                    'programs': programs,
+                    'days': days
                 }
-                days.append(day)
-            
-            # Lire le statut du timer (0x207E)
-            status_frame = self.communicator.send_read_command(REGISTER_CHRONO_STATUS)
-            if not status_frame:
-                logger.warning("Échec de lecture du statut du timer")
-                return None
-            
-            status_data = status_frame.get_data()
-            timer_enabled = (status_data[0] & 0x01) == 1
-            
-            chrono_data = {
-                'timer_enabled': timer_enabled,
-                'programs': programs,
-                'days': days
-            }
-            
-            # Mettre à jour l'état
-            self.state['chrono_programs'] = programs
-            self.state['chrono_days'] = days
-            self.state['timer_enabled'] = timer_enabled
-            
-            logger.info(f"Données du chrono lues: Timer {'activé' if timer_enabled else 'désactivé'}")
-            return chrono_data
+                
+                # Mettre à jour l'état
+                self.state['chrono_programs'] = programs
+                self.state['chrono_days'] = days
+                self.state['timer_enabled'] = timer_enabled
+                
+                logger.info(f"Données du chrono lues: Timer {'activé' if timer_enabled else 'désactivé'}")
+                return chrono_data
             
         except Exception as e:
             logger.error(f"Erreur lors de la lecture des données du chrono: {e}")

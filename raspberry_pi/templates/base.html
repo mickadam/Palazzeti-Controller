@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Contrôleur Palazzetti{% endblock %}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        /* Styles communs pour toutes les pages */
+        .status-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-left: 5px solid #28a745;
+        }
+
+        .status-card.off {
+            border-left-color: #dc3545;
+        }
+
+        .status-card.burning {
+            border-left-color: #fd7e14;
+        }
+
+        .status-card.cooling {
+            border-left-color: #6c757d;
+        }
+
+        .status-card.alarm {
+            border-left-color: #dc3545;
+            background: #fff5f5;
+        }
+
+        .status-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .status-display {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex: 1;
+            margin: 0 15px;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-icon {
+            font-size: 1.2em;
+            width: 20px;
+            text-align: center;
+        }
+
+        .status-text {
+            font-size: 1em;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .status-label {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .status-value {
+            font-size: 1.1em;
+            color: #666;
+            text-transform: uppercase;
+            font-weight: 500;
+        }
+
+        .temperature-display {
+            font-size: 2.5em;
+            font-weight: 300;
+            color: #333;
+            margin: 10px 0;
+        }
+
+        .controls {
+            margin-top: 30px;
+        }
+
+        .control-group {
+            margin-bottom: 25px;
+        }
+
+        .control-label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: #333;
+            text-align: left;
+        }
+
+        .temp-control {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .temp-display {
+            text-align: center;
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .temp-control-row {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .temp-btn {
+            width: 50px;
+            height: 50px;
+            border: none;
+            border-radius: 50%;
+            background: #667eea;
+            color: white;
+            font-size: 1.5em;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+            transition: all 0.2s ease;
+        }
+
+        .temp-btn:hover {
+            background: #5a6fd8;
+            transform: scale(1.05);
+        }
+
+        .temp-btn:active {
+            transform: scale(0.95);
+        }
+
+        .temp-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .temp-slider {
+            flex: 1;
+            height: 12px;
+            border-radius: 6px;
+            background: #ddd;
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .temp-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            transition: all 0.2s ease;
+        }
+
+        .temp-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
+        }
+
+        .temp-slider::-moz-range-thumb {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .temp-value {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #333;
+            min-width: 60px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+        }
+
+        .btn-danger:hover {
+            box-shadow: 0 6px 20px rgba(220, 53, 69, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+        }
+
+        .btn-success:hover {
+            box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+        }
+
+        .power-controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .btn.loading {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .interface-inactive {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .interface-inactive .status-card {
+            background: #f8f9fa;
+            border-left-color: #6c757d;
+        }
+
+        .interface-inactive .temp-slider {
+            background: #e9ecef;
+            cursor: not-allowed;
+        }
+
+        .interface-inactive .temp-slider::-webkit-slider-thumb {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+
+        .interface-inactive .temp-slider::-moz-range-thumb {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+
+        .interface-inactive .temp-btn {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+
+        /* Styles pour les boutons de rafraîchissement */
+        .btn-refresh {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+        }
+
+        .btn-refresh:hover {
+            background: rgba(102, 126, 234, 0.1);
+            transform: scale(1.1);
+        }
+
+        .btn-refresh:disabled {
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .btn-refresh:disabled:hover {
+            background: transparent;
+            transform: none;
+        }
+
+        .refresh-icon {
+            font-size: 1.2em;
+            transition: transform 0.3s ease;
+        }
+
+        .refresh-icon.loading {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive pour les styles communs */
+        @media (max-width: 600px) {
+            .temp-control {
+                gap: 15px;
+            }
+
+            .temp-control-row {
+                gap: 20px;
+            }
+
+            .temp-btn {
+                width: 60px;
+                height: 60px;
+                font-size: 1.8em;
+            }
+
+            .temp-slider {
+                height: 16px;
+            }
+
+            .temp-slider::-webkit-slider-thumb {
+                width: 40px;
+                height: 40px;
+            }
+
+            .temp-slider::-moz-range-thumb {
+                width: 40px;
+                height: 40px;
+            }
+
+            .power-controls {
+                flex-direction: column;
+            }
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            padding: 10px 0;
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .header-title h1 {
+            font-size: 1.2rem;
+            color: #333;
+            font-weight: 300;
+            margin: 0;
+        }
+
+        .header-title p {
+            color: #666;
+            font-size: 0.8rem;
+            margin: 0;
+            display: none;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 5px;
+            flex-wrap: nowrap;
+        }
+
+        .nav-btn {
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            padding: 6px 12px;
+            border-radius: 15px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            font-size: 0.8rem;
+        }
+
+        .nav-btn:hover {
+            background: rgba(102, 126, 234, 0.2);
+            border-color: rgba(102, 126, 234, 0.5);
+            transform: translateY(-1px);
+        }
+
+        .nav-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+
+        .main-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 15px;
+        }
+
+        /* Mobile first - styles par défaut pour mobile */
+        @media (max-width: 480px) {
+            .header {
+                padding: 8px 0;
+            }
+
+            .header-content {
+                padding: 0 10px;
+                gap: 8px;
+            }
+
+            .header-title h1 {
+                font-size: 1rem;
+            }
+
+            .nav-btn {
+                padding: 4px 8px;
+                font-size: 0.7rem;
+            }
+
+            .main-content {
+                padding: 10px;
+            }
+        }
+
+        /* Tablette */
+        @media (min-width: 481px) and (max-width: 768px) {
+            .header {
+                padding: 12px 0;
+            }
+
+            .header-content {
+                padding: 0 15px;
+                gap: 12px;
+            }
+
+            .header-title h1 {
+                font-size: 1.3rem;
+            }
+
+            .nav-btn {
+                padding: 6px 12px;
+                font-size: 0.8rem;
+            }
+        }
+
+        /* Desktop */
+        @media (min-width: 769px) {
+            .header {
+                padding: 20px 0;
+            }
+
+            .header-content {
+                padding: 0 20px;
+                gap: 20px;
+            }
+
+            .header-title {
+                gap: 15px;
+            }
+
+            .header-title h1 {
+                font-size: 2rem;
+            }
+
+            .header-title p {
+                display: block;
+                font-size: 1rem;
+            }
+
+            .nav-buttons {
+                gap: 10px;
+            }
+
+            .nav-btn {
+                padding: 10px 20px;
+                font-size: 1rem;
+                border-radius: 25px;
+                border-width: 2px;
+            }
+
+            .main-content {
+                padding: 20px;
+            }
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <div class="header-title">
+                <h1>🔥 Palazzetti</h1>
+                <p>{% block subtitle %}Contrôleur de poêle à pellets{% endblock %}</p>
+            </div>
+            
+            <nav class="nav-buttons">
+                <a href="/" class="nav-btn {% block home_active %}{% endblock %}">🏠 Accueil</a>
+                <a href="/timer" class="nav-btn {% block timer_active %}{% endblock %}">⏰ Timer</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <script>
+        // Gestionnaire global des requêtes
+        let currentRequest = null;
+        let requestAbortController = null;
+        let isRequestInProgress = false;
+
+        // Fonction pour annuler la requête en cours
+        function cancelCurrentRequest() {
+            if (requestAbortController) {
+                requestAbortController.abort();
+                requestAbortController = null;
+            }
+            isRequestInProgress = false;
+        }
+
+        // Fonction pour wrapper les requêtes fetch avec gestion d'annulation
+        function fetchWithCancellation(url, options = {}) {
+            // Annuler la requête précédente si elle existe
+            if (isRequestInProgress) {
+                cancelCurrentRequest();
+            }
+
+            // Créer un nouvel AbortController
+            requestAbortController = new AbortController();
+            isRequestInProgress = true;
+
+            // Ajouter le signal d'annulation aux options
+            const fetchOptions = {
+                ...options,
+                signal: requestAbortController.signal
+            };
+
+            return fetch(url, fetchOptions)
+                .catch(error => {
+                    if (error.name === 'AbortError') {
+                        console.log('Requête annulée');
+                    } else {
+                        console.error('Erreur de requête:', error);
+                    }
+                    throw error;
+                })
+                .finally(() => {
+                    isRequestInProgress = false;
+                    requestAbortController = null;
+                });
+        }
+
+        // Gestion de la navigation - annuler les requêtes en cours
+        document.addEventListener('beforeunload', function() {
+            cancelCurrentRequest();
+        });
+
+        // Exposer les fonctions globalement pour les pages
+        window.cancelCurrentRequest = cancelCurrentRequest;
+        window.fetchWithCancellation = fetchWithCancellation;
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

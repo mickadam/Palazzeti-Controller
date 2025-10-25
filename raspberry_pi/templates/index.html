@@ -1,479 +1,63 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Contrôleur Palazzetti</title>
-    <!-- Socket.IO supprimé - plus de temps réel -->
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+{% extends "base.html" %}
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
+{% block title %}Contrôleur Palazzetti{% endblock %}
+{% block subtitle %}Contrôleur de poêle à pellets{% endblock %}
+{% block home_active %}active{% endblock %}
 
+{% block extra_css %}
+<style>
+        /* Styles spécifiques à la page d'accueil */
         .container {
             background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            padding: 20px;
             max-width: 500px;
             width: 100%;
             text-align: center;
+            margin: 0 auto;
         }
 
-        .header {
-            margin-bottom: 30px;
-        }
-
-        .header h1 {
-            color: #333;
-            font-size: 2.5em;
-            margin-bottom: 10px;
-            font-weight: 300;
-        }
-
-        .header p {
-            color: #666;
-            font-size: 1.1em;
-        }
-
-        .nav-buttons {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            margin-bottom: 30px;
-        }
-
-        .nav-btn {
-            background: rgba(102, 126, 234, 0.1);
-            color: #667eea;
-            border: 2px solid rgba(102, 126, 234, 0.3);
-            padding: 12px 24px;
-            border-radius: 25px;
-            text-decoration: none;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-
-        .nav-btn:hover {
-            background: rgba(102, 126, 234, 0.2);
-            border-color: rgba(102, 126, 234, 0.5);
-            transform: translateY(-2px);
-        }
-
-        .nav-btn.active {
-            background: #667eea;
-            color: white;
-            border-color: #667eea;
-        }
-
-        .status-card {
-            background: #f8f9fa;
-            border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 25px;
-            border-left: 5px solid #28a745;
-        }
-
-        .status-card.off {
-            border-left-color: #dc3545;
-        }
-
-        .status-card.burning {
-            border-left-color: #fd7e14;
-        }
-
-        .status-card.cooling {
-            border-left-color: #6c757d;
-        }
-
-        .status-card.alarm {
-            border-left-color: #dc3545;
-            background: #fff5f5;
-        }
-
-        .status-info {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-
-        .status-display {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            flex: 1;
-            margin: 0 15px;
-        }
-
-        .status-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .status-icon {
-            font-size: 1.2em;
-            width: 20px;
-            text-align: center;
-        }
-
-        .status-text {
-            font-size: 1em;
-            font-weight: 600;
-            color: #333;
-        }
-
-        .btn-refresh {
-            background: transparent;
-            border: none;
-            cursor: pointer;
-            padding: 8px;
-            border-radius: 50%;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 40px;
-            height: 40px;
-        }
-
-        .btn-refresh:hover {
-            background: rgba(102, 126, 234, 0.1);
-            transform: scale(1.1);
-        }
-
-        .btn-refresh:disabled {
-            cursor: not-allowed;
-            opacity: 0.6;
-        }
-
-        .btn-refresh:disabled:hover {
-            background: transparent;
-            transform: none;
-        }
-
-        .refresh-icon {
-            font-size: 1.2em;
-            transition: transform 0.3s ease;
-        }
-
-        .refresh-icon.loading {
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-
-        .status-label {
-            font-size: 1.2em;
-            font-weight: 600;
-            color: #333;
-        }
-
-        .status-value {
-            font-size: 1.1em;
-            color: #666;
-            text-transform: uppercase;
-            font-weight: 500;
-        }
-
-        .temperature-display {
-            font-size: 2.5em;
-            font-weight: 300;
-            color: #333;
-            margin: 10px 0;
-        }
-
-        .controls {
-            margin-top: 30px;
-        }
-
-        .control-group {
-            margin-bottom: 25px;
-        }
-
-        .control-label {
-            display: block;
-            margin-bottom: 10px;
-            font-weight: 600;
-            color: #333;
-            text-align: left;
-        }
-
-        .temp-control {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-
-        .temp-display {
-            text-align: center;
-            font-size: 1.2em;
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 5px;
-        }
-
-        .temp-control-row {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .temp-btn {
-            width: 50px;
-            height: 50px;
-            border: none;
-            border-radius: 50%;
-            background: #667eea;
-            color: white;
-            font-size: 1.5em;
-            font-weight: bold;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-            transition: all 0.2s ease;
-        }
-
-        .temp-btn:hover {
-            background: #5a6fd8;
-            transform: scale(1.05);
-        }
-
-        .temp-btn:active {
-            transform: scale(0.95);
-        }
-
-        .temp-btn:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .temp-slider {
-            flex: 1;
-            height: 12px;
-            border-radius: 6px;
-            background: #ddd;
-            outline: none;
-            -webkit-appearance: none;
-            appearance: none;
-        }
-
-        .temp-slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            background: #667eea;
-            cursor: pointer;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-            transition: all 0.2s ease;
-        }
-
-        .temp-slider::-webkit-slider-thumb:hover {
-            transform: scale(1.1);
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
-        }
-
-        .temp-slider::-moz-range-thumb {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            background: #667eea;
-            cursor: pointer;
-            border: none;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-        }
-
-        .temp-value {
-            font-size: 1.2em;
-            font-weight: 600;
-            color: #333;
-            min-width: 60px;
-        }
-
-        .btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            border-radius: 25px;
-            font-size: 1.1em;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
-        }
-
-        .btn:active {
-            transform: translateY(0);
-        }
-
-        .btn:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-
-        .btn-danger {
-            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
-            box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
-        }
-
-        .btn-danger:hover {
-            box-shadow: 0 6px 20px rgba(220, 53, 69, 0.4);
-        }
-
-        .btn-success {
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
-        }
-
-        .btn-success:hover {
-            box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
-        }
-
-        .power-controls {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-        }
-
-        /* Styles du statut de connexion supprimés */
-
-        .loading {
-            opacity: 0.6;
-            pointer-events: none;
-        }
-
-        .btn.loading {
-            opacity: 0.7;
-            cursor: not-allowed;
-        }
-
-        .interface-inactive {
-            opacity: 0.5;
-            pointer-events: none;
-        }
-
-        .interface-inactive .status-card {
-            background: #f8f9fa;
-            border-left-color: #6c757d;
-        }
-
-        .interface-inactive .temp-slider {
-            background: #e9ecef;
-            cursor: not-allowed;
-        }
-
-        .interface-inactive .temp-slider::-webkit-slider-thumb {
-            background: #6c757d;
-            cursor: not-allowed;
-        }
-
-        .interface-inactive .temp-slider::-moz-range-thumb {
-            background: #6c757d;
-            cursor: not-allowed;
-        }
-
-        .interface-inactive .temp-btn {
-            background: #6c757d;
-            cursor: not-allowed;
-        }
-
-        /* Styles du bouton de test de connexion supprimés */
-
-        /* Styles du menu de debug supprimés */
-
-        @media (max-width: 600px) {
+        /* Mobile first - styles par défaut pour mobile */
+        @media (max-width: 480px) {
             .container {
-                padding: 20px;
-                margin: 10px;
-            }
-
-            .header h1 {
-                font-size: 2em;
-            }
-
-            .temp-control {
-                gap: 15px;
-            }
-
-            .temp-control-row {
-                gap: 20px;
-            }
-
-            .temp-btn {
-                width: 60px;
-                height: 60px;
-                font-size: 1.8em;
-            }
-
-            .temp-slider {
-                height: 16px;
-            }
-
-            .temp-slider::-webkit-slider-thumb {
-                width: 40px;
-                height: 40px;
-            }
-
-            .temp-slider::-moz-range-thumb {
-                width: 40px;
-                height: 40px;
-            }
-
-            .power-controls {
-                flex-direction: column;
+                padding: 15px;
+                border-radius: 10px;
+                margin: 5px;
             }
         }
+
+        /* Tablette */
+        @media (min-width: 481px) and (max-width: 768px) {
+            .container {
+            padding: 25px;
+                border-radius: 15px;
+            }
+        }
+
+        /* Desktop */
+        @media (min-width: 769px) {
+            .container {
+                padding: 40px;
+                border-radius: 20px;
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            }
+        }
+
+        /* Effet hover pour l'élément timer */
+        #timerItem:hover {
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
     </style>
-</head>
-<body>
-    <!-- Menu de développement supprimé -->
+{% endblock %}
 
-    <!-- Statut de connexion supprimé -->
-
-    <div class="container">
-        <div class="header">
-            <h1>🔥 Palazzetti</h1>
-            <p>Contrôleur de poêle à pellets</p>
-        </div>
-
-        <div class="nav-buttons">
-            <a href="/" class="nav-btn active">🏠 Accueil</a>
-            <a href="/timer" class="nav-btn">⏰ Timer</a>
-        </div>
-
+{% block content %}
+<div class="container">
         <div class="status-card" id="statusCard">
             <div class="status-info">
-                <span class="status-label">Statut</span>
                 <div class="status-display">
                     <div class="status-item">
                         <span class="status-icon" id="powerIcon">⚫</span>
@@ -483,9 +67,9 @@
                         <span class="status-icon" id="fireIcon">❄️</span>
                         <span class="status-text" id="fireStatus">Éteint</span>
                     </div>
-                    <div class="status-item" id="timerItem" style="display: none;">
+                    <div class="status-item" id="timerItem" onclick="window.location.href='/timer'" style="cursor: pointer;" title="Cliquez pour configurer le timer">
                         <span class="status-icon" id="timerIcon">⏰</span>
-                        <span class="status-text" id="timerStatus">Timer activé</span>
+                        <span class="status-text" id="timerStatus">Timer désactivé</span>
                     </div>
                     <div class="status-item" id="pelletItem" style="display: none;">
                         <span class="status-icon" id="pelletIcon">🪵</span>
@@ -529,24 +113,11 @@
                     Définir
                 </button>
             </div>
-
-            <!-- Contrôles on/off temporairement désactivés -->
-            <!--
-            <div class="control-group">
-                <label class="control-label">Contrôle du poêle</label>
-                <div class="power-controls">
-                    <button class="btn btn-success" id="powerOnBtn" onclick="setPower(true)">
-                        Allumer
-                    </button>
-                    <button class="btn btn-danger" id="powerOffBtn" onclick="setPower(false)">
-                        Éteindre
-                    </button>
                 </div>
             </div>
-            -->
-        </div>
-    </div>
+{% endblock %}
 
+{% block extra_js %}
     <script>
         console.log('=== SCRIPT JAVASCRIPT CHARGÉ ===');
         // Socket.IO supprimé - plus de temps réel
@@ -568,8 +139,6 @@
         const tempSlider = document.getElementById('tempSlider');
         const tempValue = document.getElementById('tempValue');
         const setTempBtn = document.getElementById('setTempBtn');
-        // const powerOnBtn = document.getElementById('powerOnBtn');
-        // const powerOffBtn = document.getElementById('powerOffBtn');
         const errorDisplay = document.getElementById('errorDisplay');
         const errorMessage = document.getElementById('errorMessage');
         const refreshBtn = document.getElementById('refreshBtn');
@@ -587,10 +156,6 @@
             error_code: 0,
             error_message: 'Aucune erreur'
         };
-
-        // Mode développement supprimé
-
-        // Gestionnaires WebSocket supprimés - plus de temps réel
 
         // Mise à jour de l'affichage du statut avec icônes
         function updateStatusDisplay(state) {
@@ -692,31 +257,15 @@
                 tempValue.textContent = sliderValue.toFixed(1) + '°C';
             }
             
-            // Mise à jour des boutons de contrôle - DÉSACTIVÉE
-            // updatePowerButtons(state.power);
-            
             // Mise à jour du bouton "Définir"
             updateSetTempButton();
             
             // Mise à jour de l'affichage des erreurs
             updateErrorDisplay();
             
-            // Mise à jour du slider de simulation supprimée
-            
             // Mise à jour de l'état de l'interface
             updateInterfaceState();
         }
-
-        // Mise à jour des boutons de contrôle - DÉSACTIVÉE
-        // function updatePowerButtons(powerOn) {
-        //     if (powerOn) {
-        //         powerOnBtn.disabled = true;
-        //         powerOffBtn.disabled = false;
-        //     } else {
-        //         powerOnBtn.disabled = false;
-        //         powerOffBtn.disabled = true;
-        //     }
-        // }
 
         // Mise à jour du bouton "Définir"
         function updateSetTempButton() {
@@ -749,11 +298,15 @@
         // Mise à jour de l'affichage du timer
         function updateTimerDisplay(state) {
             if (state.timer_enabled === true) {
-                timerItem.style.display = 'flex';
                 timerIcon.textContent = '⏰';
                 timerStatus.textContent = 'Timer activé';
+                timerItem.style.color = '#4CAF50';
+                timerItem.style.fontWeight = '600';
             } else {
-                timerItem.style.display = 'none';
+                timerIcon.textContent = '⏰';
+                timerStatus.textContent = 'Timer désactivé';
+                timerItem.style.color = '#999';
+                timerItem.style.fontWeight = '400';
             }
         }
 
@@ -793,22 +346,15 @@
             }
         }
 
-        // Fonction de simulation supprimée
-
         // Mise à jour de l'état de l'interface
         function updateInterfaceState() {
             const isReady = currentState.connected && currentState.synchronized;
             const container = document.querySelector('.container');
             
-            // Désactiver/activer tous les contrôles (sauf le bouton de test de connexion)
+            // Désactiver/activer tous les contrôles
             tempSlider.disabled = !isReady;
             setTempBtn.disabled = !isReady || setTempBtn.disabled;
             updateTempButtons();
-            // powerOnBtn.disabled = !isReady || powerOnBtn.disabled;
-            // powerOffBtn.disabled = !isReady || powerOffBtn.disabled;
-            
-            // Le bouton de test de connexion reste toujours actif
-            // testConnectionBtn reste toujours disponible
             
             // Appliquer le style d'inactivité
             if (isReady) {
@@ -816,8 +362,6 @@
             } else {
                 container.classList.add('interface-inactive');
             }
-            
-            // Statut de connexion supprimé - plus d'affichage en haut à droite
         }
 
         // Gestion du slider de température
@@ -865,7 +409,7 @@
             setSetTempLoading(true);
             refreshBtn.disabled = true;
             
-            fetch('/api/set_temperature', {
+            fetchWithCancellation('/api/set_temperature', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -886,42 +430,16 @@
                 }
             })
             .catch(error => {
+                if (error.name !== 'AbortError') {
                 console.error('Erreur:', error);
                 alert('Erreur de communication');
+                }
             })
             .finally(() => {
                 setSetTempLoading(false);
                 refreshBtn.disabled = false;
             });
         }
-
-        // Contrôle du poêle (allumer/éteindre) - DÉSACTIVÉ
-        // function setPower(powerOn) {
-        //     setLoading(true);
-        //     
-        //     fetch('/api/set_power', {
-        //         method: 'POST',
-        //         headers: {
-        //             'Content-Type': 'application/json',
-        //         },
-        //         body: JSON.stringify({ power: powerOn })
-        //     })
-        //     .then(response => response.json())
-        //     .then(data => {
-        //         if (data.success) {
-        //             console.log('Poêle', powerOn ? 'allumé' : 'éteint');
-        //         } else {
-        //             alert('Erreur: ' + data.message);
-        //         }
-        //     })
-        //     .catch(error => {
-        //         console.error('Erreur:', error);
-        //         alert('Erreur de communication');
-        //     })
-        //     .finally(() => {
-        //         setLoading(false);
-        //     });
-        // }
 
         // Gestion du loading
         function setLoading(loading) {
@@ -998,7 +516,8 @@
 
             setRefreshLoading(true);
             
-            fetch('/api/refresh_state', {
+            // Utiliser la fonction de fetch avec annulation
+            fetchWithCancellation('/api/refresh_state', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1019,8 +538,10 @@
                 }
             })
             .catch(error => {
+                if (error.name !== 'AbortError') {
                 console.error('Erreur de communication:', error);
                 alert('Erreur de communication lors du rafraîchissement');
+                }
             })
             .finally(() => {
                 setRefreshLoading(false);
@@ -1037,10 +558,6 @@
                 refreshIcon.classList.remove('loading');
             }
         }
-
-        // Fonctions de test de connexion supprimées - le bouton de rafraîchissement gère la reconnexion
-
-        // Fonctions de simulation supprimées
 
         // Initialisation de l'interface avec état déconnecté par défaut
         currentState.connected = false;
@@ -1108,7 +625,7 @@
             }, 10000); // 10 secondes de timeout
 
             console.log('Envoi de la requête fetch vers /api/state...');
-            fetch('/api/state')
+            fetchWithCancellation('/api/state')
                 .then(response => {
                     console.log('Réponse reçue:', response.status, response.statusText);
                     clearTimeout(timeoutId);
@@ -1123,6 +640,7 @@
                 })
                 .catch(error => {
                     clearTimeout(timeoutId);
+                    if (error.name !== 'AbortError') {
                     console.error('Erreur lors du chargement initial:', error);
                     // En cas d'erreur, afficher un état d'erreur
                     const errorState = {
@@ -1137,6 +655,7 @@
                         pellet_consumption_raw: null
                     };
                     updateState(errorState);
+                    }
                 })
                 .finally(() => {
                     setRefreshLoading(false);
@@ -1149,8 +668,4 @@
             loadInitialState();
         });
     </script>
-</body>
-</html>
-
-
-
+{% endblock %}
