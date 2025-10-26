@@ -20,6 +20,7 @@ class EmailNotificationManager:
         self.config = NOTIFICATION_CONFIG
         self.smtp_config = smtp_config or self._get_default_smtp_config()
         self.last_alerts = {}  # Pour gérer les cooldowns
+        self.alert_states = {}  # Pour suivre l'état des alertes (active/résolue)
         
     def _get_default_smtp_config(self):
         """Configuration SMTP par défaut"""
@@ -47,6 +48,30 @@ class EmailNotificationManager:
             return True
         
         return False
+    
+    def _is_alert_active(self, alert_key):
+        """Vérifier si une alerte est actuellement active"""
+        return self.alert_states.get(alert_key, False)
+    
+    def _set_alert_state(self, alert_key, is_active):
+        """Définir l'état d'une alerte"""
+        self.alert_states[alert_key] = is_active
+    
+    def _should_send_alert_smart(self, alert_key, is_problem_detected):
+        """Logique intelligente pour les alertes : envoie seulement à la détection et à la résolution"""
+        was_active = self._is_alert_active(alert_key)
+        
+        if is_problem_detected and not was_active:
+            # Nouveau problème détecté
+            self._set_alert_state(alert_key, True)
+            return True
+        elif not is_problem_detected and was_active:
+            # Problème résolu
+            self._set_alert_state(alert_key, False)
+            return True
+        else:
+            # Problème persiste ou pas de problème
+            return False
     
     def _send_email(self, subject, body, html_body=None):
         """Envoyer un email"""
@@ -321,8 +346,134 @@ Système de surveillance automatique
         
         return self._send_email(subject, body, html_body)
     
+    def send_critical_error_resolved_alert(self):
+        """Envoyer une notification de résolution d'erreur critique"""
+        subject = "✅ Erreur Résolue - Poêle Palazzetti"
+        body = f"""
+ERREUR RÉSOLUE - POÊLE PALAZZETTI
+
+L'erreur critique précédemment détectée a été résolue.
+Date: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}
+
+Le poêle fonctionne maintenant normalement.
+
+---
+Contrôleur Palazzetti
+Système de surveillance automatique
+        """.strip()
+        
+        html_body = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <div style="background: #e8f5e8; border-left: 5px solid #4caf50; padding: 20px; margin: 20px 0;">
+                <h2 style="color: #2e7d32; margin: 0 0 15px 0;">✅ ERREUR RÉSOLUE</h2>
+                
+                <div style="background: white; padding: 15px; border-radius: 5px; margin: 10px 0;">
+                    <p>L'erreur critique précédemment détectée a été résolue.</p>
+                    <p><strong>Date:</strong> {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}</p>
+                </div>
+                
+                <div style="background: #e8f5e8; padding: 15px; border-radius: 5px; border-left: 3px solid #4caf50;">
+                    <p><strong>✅ Statut:</strong> Le poêle fonctionne maintenant normalement.</p>
+                </div>
+            </div>
+            
+            <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+            <p style="font-size: 12px; color: #666;">
+                Contrôleur Palazzetti - Système de surveillance automatique
+            </p>
+        </body>
+        </html>
+        """
+        
+        return self._send_email(subject, body, html_body)
+    
+    def send_low_pellets_resolved_alert(self):
+        """Envoyer une notification de résolution du problème de pellets"""
+        subject = "✅ Niveau de Pellets Restauré - Poêle Palazzetti"
+        body = f"""
+NIVEAU DE PELLETS RESTAURÉ
+
+Le niveau de pellets est maintenant suffisant.
+Date: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}
+
+Le poêle peut fonctionner normalement.
+
+---
+Contrôleur Palazzetti
+Système de surveillance automatique
+        """.strip()
+        
+        html_body = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <div style="background: #e8f5e8; border-left: 5px solid #4caf50; padding: 20px; margin: 20px 0;">
+                <h2 style="color: #2e7d32; margin: 0 0 15px 0;">✅ NIVEAU DE PELLETS RESTAURÉ</h2>
+                
+                <div style="background: white; padding: 15px; border-radius: 5px; margin: 10px 0;">
+                    <p>Le niveau de pellets est maintenant suffisant.</p>
+                    <p><strong>Date:</strong> {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}</p>
+                </div>
+                
+                <div style="background: #e8f5e8; padding: 15px; border-radius: 5px; border-left: 3px solid #4caf50;">
+                    <p><strong>✅ Statut:</strong> Le poêle peut fonctionner normalement.</p>
+                </div>
+            </div>
+            
+            <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+            <p style="font-size: 12px; color: #666;">
+                Contrôleur Palazzetti - Système de surveillance automatique
+            </p>
+        </body>
+        </html>
+        """
+        
+        return self._send_email(subject, body, html_body)
+    
+    def send_connection_restored_alert(self):
+        """Envoyer une notification de restauration de connexion"""
+        subject = "✅ Connexion Restaurée - Poêle Palazzetti"
+        body = f"""
+CONNEXION RESTAURÉE
+
+La connexion avec le poêle a été restaurée.
+Date: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}
+
+Le contrôleur peut maintenant communiquer avec le poêle.
+
+---
+Contrôleur Palazzetti
+Système de surveillance automatique
+        """.strip()
+        
+        html_body = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <div style="background: #e8f5e8; border-left: 5px solid #4caf50; padding: 20px; margin: 20px 0;">
+                <h2 style="color: #2e7d32; margin: 0 0 15px 0;">✅ CONNEXION RESTAURÉE</h2>
+                
+                <div style="background: white; padding: 15px; border-radius: 5px; margin: 10px 0;">
+                    <p>La connexion avec le poêle a été restaurée.</p>
+                    <p><strong>Date:</strong> {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}</p>
+                </div>
+                
+                <div style="background: #e8f5e8; padding: 15px; border-radius: 5px; border-left: 3px solid #4caf50;">
+                    <p><strong>✅ Statut:</strong> Le contrôleur peut maintenant communiquer avec le poêle.</p>
+                </div>
+            </div>
+            
+            <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+            <p style="font-size: 12px; color: #666;">
+                Contrôleur Palazzetti - Système de surveillance automatique
+            </p>
+        </body>
+        </html>
+        """
+        
+        return self._send_email(subject, body, html_body)
+    
     def check_all_conditions(self, state, consumption_data=None):
-        """Vérifier toutes les conditions d'alerte"""
+        """Vérifier toutes les conditions d'alerte avec logique intelligente"""
         if not self.config['enabled']:
             return
         
@@ -332,19 +483,31 @@ Système de surveillance automatique
             error_message = state.get('error_message', 'Erreur inconnue')
             critical_codes = self.config['alerts']['critical_errors']['codes']
             
-            if error_code in critical_codes:
-                self.send_critical_error_alert(error_code, error_message)
+            is_critical_error = error_code in critical_codes
+            if self._should_send_alert_smart('critical_errors', is_critical_error):
+                if is_critical_error:
+                    self.send_critical_error_alert(error_code, error_message)
+                else:
+                    self.send_critical_error_resolved_alert()
             
             # Vérifier le niveau de pellets
             fill_level = state.get('fill_level', {}).get('fill_level', 100)
             threshold = self.config['alerts']['low_pellets']['threshold']
             
-            if fill_level < threshold:
-                self.send_low_pellets_alert(fill_level, threshold)
+            is_low_pellets = fill_level < threshold
+            if self._should_send_alert_smart('low_pellets', is_low_pellets):
+                if is_low_pellets:
+                    self.send_low_pellets_alert(fill_level, threshold)
+                else:
+                    self.send_low_pellets_resolved_alert()
             
             # Vérifier la perte de connexion
-            if not state.get('connected', False):
-                self.send_connection_lost_alert()
+            is_connected = state.get('connected', False)
+            if self._should_send_alert_smart('connection_lost', not is_connected):
+                if not is_connected:
+                    self.send_connection_lost_alert()
+                else:
+                    self.send_connection_restored_alert()
             
             # Vérifier la maintenance
             if consumption_data:

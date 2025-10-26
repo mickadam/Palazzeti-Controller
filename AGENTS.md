@@ -53,6 +53,16 @@ Ce projet est un contrôleur pour poêle à pellets Palazzetti qui communique vi
 - **Timeouts** :
   - `TIMEOUT` : Timeout général de communication (défaut: 10s)
   - `CONNECTION_TEST_TIMEOUT` : Timeout pour test de connexion (défaut: 5s)
+- **Notifications** :
+  - `NOTIFICATIONS_ENABLED` : Activer/désactiver les notifications (défaut: true)
+  - `NOTIFICATION_CHECK_INTERVAL` : Intervalle de vérification en minutes (défaut: 30)
+  - `SMTP_SERVER` : Serveur SMTP (défaut: smtp.gmail.com)
+  - `SMTP_PORT` : Port SMTP (défaut: 587)
+  - `SMTP_USERNAME` : Nom d'utilisateur SMTP
+  - `SMTP_PASSWORD` : Mot de passe SMTP
+  - `FROM_EMAIL` : Email expéditeur
+  - `TO_EMAILS` : Emails destinataires (séparés par virgules)
+  - `SMTP_USE_TLS` : Utiliser TLS (défaut: true)
 - **Variables d'environnement** : Configurées dans le service systemd
 
 ## Points d'attention pour les futures tâches
@@ -89,6 +99,34 @@ Ce projet est un contrôleur pour poêle à pellets Palazzetti qui communique vi
   - Légende des programmes configurés
   - Informations détaillées au survol des créneaux
 
+### Système de Notifications Email Intelligentes
+- **Fonctionnalité** : Notifications automatiques par email pour les alertes critiques
+- **Objectif** : Alerter l'utilisateur des problèmes sans spam (une seule notification par problème)
+- **Statut** : ✅ Implémenté et fonctionnel
+- **Fonctionnalités** :
+  - **Notifications intelligentes** : Une seule alerte par problème détecté
+  - **Notifications de résolution** : Confirmation quand les problèmes sont résolus
+  - **Types d'alertes** :
+    - 🚨 **Erreurs critiques** : Codes d'erreur E114, E108, E109, E113, E115
+    - ⚠️ **Niveau de pellets bas** : Seuil configurable (défaut: 20%)
+    - 🔧 **Maintenance requise** : Basé sur la consommation (défaut: 500kg)
+    - 🔌 **Perte de connexion** : Détection de déconnexion du poêle
+  - **Configuration SMTP** : Support Gmail et autres serveurs SMTP
+  - **Cooldowns intelligents** : Évite le spam de notifications
+- **Fichiers principaux** :
+  - `raspberry_pi/email_notifications.py` : Gestionnaire de notifications email
+  - `raspberry_pi/notification_scheduler.py` : Planificateur de surveillance
+  - `raspberry_pi/.env` : Configuration SMTP (exemple: `env.example`)
+- **API endpoints** :
+  - `GET /api/notifications/status` : Statut des notifications
+  - `POST /api/notifications/test` : Test d'envoi d'email
+  - `GET /api/notifications/config` : Configuration des notifications
+- **Logique intelligente** :
+  - **Détection** : Email envoyé à la première détection d'un problème
+  - **Persistance** : Pas d'email tant que le problème persiste
+  - **Résolution** : Email de confirmation quand le problème est résolu
+  - **Nouveau problème** : Email envoyé pour un nouveau problème différent
+
 ### Suivi de Consommation de Pellets
 - **Spécification** : `docs/specification_consommation_pellets.md`
 - **Objectif** : Afficher la consommation de pellets en temps réel et historique
@@ -104,6 +142,11 @@ Ce projet est un contrôleur pour poêle à pellets Palazzetti qui communique vi
 - **Démarrage** : `python app.py` dans le dossier `raspberry_pi/`
 - **Installation service** : Scripts dans `raspberry_pi/service/`
 - **Tests** : Scripts de test dans le dossier `tests/`
+- **Notifications** :
+  - **Test email** : `curl -X POST http://localhost:5000/api/notifications/test`
+  - **Statut notifications** : `curl http://localhost:5000/api/notifications/status`
+  - **Configuration** : `curl http://localhost:5000/api/notifications/config`
+  - **Logs service** : `sudo journalctl -u palazzeti-controller -f`
 
 ## Fonctionnement du système de Timer/Chrono
 
