@@ -8,6 +8,8 @@ from flask import Flask, render_template, request, jsonify
 from config import *
 from palazzetti_controller import PalazzettiController
 from consumption_storage import ConsumptionStorage
+from email_notifications import EmailNotificationManager
+from notification_scheduler import start_notification_scheduler, stop_notification_scheduler
 
 # Configuration du logging
 import os
@@ -29,6 +31,7 @@ app.config['SECRET_KEY'] = 'palazzetti_secret'
 # Instance globale du contrôleur (sera initialisée dans main())
 controller = None
 consumption_storage = None
+email_notification_manager = None
 
 
 @app.route('/')
@@ -45,6 +48,7 @@ def timer():
 def consumption():
     """Page de gestion de la consommation"""
     return render_template('consumption.html')
+
 
 
 @app.route('/api/state')
@@ -650,6 +654,72 @@ def api_set_temperature():
 
 # Gestionnaires WebSocket supprimés - plus de temps réel
 
+# ===== ENDPOINTS POUR LES NOTIFICATIONS EMAIL =====
+
+@app.route('/api/notifications/status')
+def api_notifications_status():
+    """API pour obtenir le statut des notifications email"""
+    global email_notification_manager
+    
+    if email_notification_manager is None:
+        return jsonify({
+            'enabled': False,
+            'email_configured': False
+        })
+    
+    email_config = email_notification_manager.get_config_status()
+    
+    return jsonify({
+        'enabled': NOTIFICATION_CONFIG['enabled'],
+        'email_configured': email_config['smtp_configured'],
+        'email_config': email_config,
+        'config': {
+            'check_interval': NOTIFICATION_CONFIG['check_interval'],
+            'alerts': NOTIFICATION_CONFIG['alerts']
+        }
+    })
+
+@app.route('/api/notifications/test', methods=['POST'])
+def api_test_notification():
+    """API pour tester l'envoi de notifications email"""
+    global email_notification_manager
+    
+    if email_notification_manager is None:
+        return jsonify({'error': 'Gestionnaire de notifications email non initialisé'}), 500
+    
+    try:
+        data = request.get_json() or {}
+        message = data.get('message', 'Ceci est une notification de test depuis le contrôleur Palazzetti')
+        
+        # Test des notifications email
+        success = email_notification_manager.send_test_email(message)
+        
+        return jsonify({
+            'success': success,
+            'message': 'Test de notification email envoyé' if success else 'Erreur lors de l\'envoi du test email',
+            'type': 'email'
+        })
+        
+    except Exception as e:
+        logger.error(f"Erreur lors du test de notification: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/notifications/config', methods=['GET'])
+def api_notifications_config():
+    """API pour obtenir la configuration des notifications email"""
+    global email_notification_manager
+    
+    # Retourner la configuration actuelle
+    email_config_status = {}
+    if email_notification_manager:
+        email_config_status = email_notification_manager.get_config_status()
+    
+    return jsonify({
+        'config': NOTIFICATION_CONFIG,
+        'notification_url': NOTIFICATION_URL,
+        'email_config': email_config_status
+    })
+
 
 def main():
     """Fonction principale"""
@@ -657,13 +727,15 @@ def main():
     import signal
     
     # Créer le contrôleur et le stockage
-    global controller, consumption_storage
+    global controller, consumption_storage, email_notification_manager
     controller = None
     consumption_storage = None
+    email_notification_manager = None
     
     def signal_handler(signum, frame):
         """Gestionnaire de signal pour arrêt propre"""
         logger.info("Signal d'arrêt reçu, fermeture en cours...")
+        stop_notification_scheduler()
         if controller:
             controller.stop_monitoring()
             controller.disconnect()
@@ -677,6 +749,7 @@ def main():
         # Créer le contrôleur et le stockage
         controller = PalazzettiController()
         consumption_storage = ConsumptionStorage()
+        email_notification_manager = EmailNotificationManager()
         
         # Essayer de se connecter (mais ne pas arrêter si ça échoue)
         if controller.connect():
@@ -685,6 +758,9 @@ def main():
             controller.start_monitoring()
         else:
             logger.warning("Impossible de se connecter au poêle - interface web disponible en mode déconnecté")
+        
+        # Démarrer le scheduler de notifications email
+        start_notification_scheduler(controller, consumption_storage)
         
         # Démarrer le serveur web (toujours, même sans connexion au poêle)
         logger.info(f"Démarrage du serveur sur {HOST}:{PORT}")
@@ -695,6 +771,7 @@ def main():
     except Exception as e:
         logger.error(f"Erreur inattendue: {e}")
     finally:
+        stop_notification_scheduler()
         if controller:
             controller.stop_monitoring()
             controller.disconnect()

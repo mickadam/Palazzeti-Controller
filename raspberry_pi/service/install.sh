@@ -151,11 +151,23 @@ cp serial_communicator.py $INSTALL_DIR/
 cp frame.py $INSTALL_DIR/
 cp config.py $INSTALL_DIR/
 cp consumption_storage.py $INSTALL_DIR/
+cp notification_scheduler.py $INSTALL_DIR/
+cp email_notifications.py $INSTALL_DIR/
 cp requirements.txt $INSTALL_DIR/
 
 # Répertoire templates
 if [ -d "templates" ]; then
     cp -r templates $INSTALL_DIR/
+fi
+
+# Répertoire static (pour les notifications) - seulement s'il contient des fichiers
+if [ -d "static" ] && [ "$(ls -A static 2>/dev/null)" ]; then
+    cp -r static $INSTALL_DIR/
+fi
+
+# Fichier de configuration d'exemple
+if [ -f "env.example" ]; then
+    cp env.example $INSTALL_DIR/
 fi
 
 log_success "Fichiers copiés vers $INSTALL_DIR"
@@ -183,6 +195,71 @@ else
     sudo -u $SERVICE_USER $VENV_DIR/bin/pip install -r requirements.txt
 fi
 log_success "Dépendances installées"
+
+# Configuration du fichier .env
+log_info "📄 Configuration des variables d'environnement..."
+
+# Vérifier s'il y a un fichier .env à la racine du projet ou dans raspberry_pi
+PROJECT_ENV_FILE="$PROJECT_DIR/.env"
+RASPBERRY_ENV_FILE="$SOURCE_DIR/.env"
+
+if [ -f "$PROJECT_ENV_FILE" ]; then
+    log_info "Fichier .env trouvé à la racine du projet, copie vers l'installation..."
+    cp "$PROJECT_ENV_FILE" "$INSTALL_DIR/.env"
+    chown $SERVICE_USER:$SERVICE_GROUP $INSTALL_DIR/.env
+    chmod 600 $INSTALL_DIR/.env
+    log_success "Fichier .env copié depuis la racine du projet"
+elif [ -f "$RASPBERRY_ENV_FILE" ]; then
+    log_info "Fichier .env trouvé dans le dossier raspberry_pi, copie vers l'installation..."
+    cp "$RASPBERRY_ENV_FILE" "$INSTALL_DIR/.env"
+    chown $SERVICE_USER:$SERVICE_GROUP $INSTALL_DIR/.env
+    chmod 600 $INSTALL_DIR/.env
+    log_success "Fichier .env copié depuis le dossier raspberry_pi"
+elif [ ! -f "$INSTALL_DIR/.env" ]; then
+    if [ -f "$INSTALL_DIR/env.example" ]; then
+        cp $INSTALL_DIR/env.example $INSTALL_DIR/.env
+        chown $SERVICE_USER:$SERVICE_GROUP $INSTALL_DIR/.env
+        chmod 600 $INSTALL_DIR/.env
+        log_success "Fichier .env créé depuis env.example"
+        log_warning "⚠️  IMPORTANT: Configurez vos paramètres SMTP dans le fichier .env"
+    else
+        log_warning "Fichier env.example non trouvé, création d'un .env basique..."
+        cat > $INSTALL_DIR/.env << 'EOF'
+# Configuration du contrôleur Palazzetti
+SERIAL_PORT=/dev/ttyUSB0
+BAUD_RATE=38400
+TIMEOUT=10
+CONNECTION_TEST_TIMEOUT=5
+
+# Configuration Flask
+HOST=0.0.0.0
+PORT=5000
+DEBUG=false
+
+# Configuration des notifications email
+NOTIFICATIONS_ENABLED=true
+NOTIFICATION_CHECK_INTERVAL=30
+NOTIFICATION_URL=http://localhost:5000
+
+# Configuration SMTP pour les notifications email
+SMTP_SERVER=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USERNAME=
+SMTP_PASSWORD=
+FROM_EMAIL=
+TO_EMAILS=
+SMTP_USE_TLS=true
+
+# Configuration du logging
+LOG_LEVEL=INFO
+EOF
+        chown $SERVICE_USER:$SERVICE_GROUP $INSTALL_DIR/.env
+        chmod 600 $INSTALL_DIR/.env
+        log_success "Fichier .env basique créé"
+    fi
+else
+    log_info "Fichier .env existe déjà dans l'installation"
+fi
 
 # Installer la configuration de rotation des logs
 log_info "📄 Installation de la configuration de rotation des logs..."
@@ -233,6 +310,19 @@ if systemctl is-active --quiet $SERVICE_NAME; then
     echo "  • Statut: sudo systemctl status $SERVICE_NAME"
     echo ""
     log_info "🌐 Interface web: http://$(hostname -I | awk '{print $1}'):5000"
+    echo ""
+        log_info "🔔 Configuration des notifications email:"
+        echo "  1. Configurez vos paramètres SMTP dans le fichier .env:"
+        echo "     nano $INSTALL_DIR/.env"
+        echo "     - SMTP_USERNAME: votre email"
+        echo "     - SMTP_PASSWORD: votre mot de passe d'application"
+        echo "     - TO_EMAILS: emails de destination (séparés par des virgules)"
+        echo "  2. Redémarrez le service:"
+        echo "     sudo systemctl restart $SERVICE_NAME"
+        echo "  3. Testez les notifications: http://$(hostname -I | awk '{print $1}'):5000/notifications"
+        echo ""
+        log_info "📧 Pour Gmail, utilisez un mot de passe d'application:"
+        echo "  https://support.google.com/accounts/answer/185833"
 else
     log_error "Échec du démarrage du service"
     log_info "Vérifiez les logs avec: sudo journalctl -u $SERVICE_NAME -f"

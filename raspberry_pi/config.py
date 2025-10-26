@@ -2,6 +2,10 @@
 Configuration pour le contrôleur Palazzetti
 """
 import os
+from dotenv import load_dotenv
+
+# Charger les variables d'environnement depuis le fichier .env
+load_dotenv()
 
 # Configuration série (protocole binaire Palazzetti)
 SERIAL_PORT = os.getenv('SERIAL_PORT', '/dev/ttyUSB0')  # Port série pour le câble RJ11
@@ -124,5 +128,46 @@ STATUS_ERROR_MAP = {
     252: 'E113: Gaz surchauffés (nettoyage conduit)',
     253: 'E114: Plus de pellets',
     254: 'E115: Erreur générale (appeler service)'
+}
+
+# Configuration des notifications
+NOTIFICATION_URL = os.getenv('NOTIFICATION_URL', 'http://localhost:5000')
+
+# Configuration des notifications email
+NOTIFICATION_CONFIG = {
+    'enabled': os.getenv('NOTIFICATIONS_ENABLED', 'true').lower() == 'true',
+    'check_interval': int(os.getenv('NOTIFICATION_CHECK_INTERVAL', '30')),  # minutes
+    'alerts': {
+        'critical_errors': {
+            'codes': [253, 247, 248, 252, 254],  # E114, E108, E109, E113, E115
+            'cooldown': 1800,  # 30 minutes
+            'title': '🚨 Alerte Critique - Poêle Palazzetti'
+        },
+        'low_pellets': {
+            'threshold': 20,  # %
+            'cooldown': 3600,  # 1 heure
+            'title': '⚠️ Niveau de Pellets Bas'
+        },
+        'maintenance': {
+            'threshold': 500,  # kg
+            'cooldown': 86400,  # 24 heures
+            'title': '🔧 Maintenance Requise'
+        },
+        'connection_lost': {
+            'cooldown': 1800,  # 30 minutes
+            'title': '🔌 Connexion Perdue'
+        }
+    }
+}
+
+# Configuration SMTP pour les notifications email
+SMTP_CONFIG = {
+    'smtp_server': os.getenv('SMTP_SERVER', 'smtp.gmail.com'),
+    'smtp_port': int(os.getenv('SMTP_PORT', '587')),
+    'username': os.getenv('SMTP_USERNAME', ''),
+    'password': os.getenv('SMTP_PASSWORD', ''),
+    'from_email': os.getenv('FROM_EMAIL', ''),
+    'to_emails': os.getenv('TO_EMAILS', '').split(',') if os.getenv('TO_EMAILS') else [],
+    'use_tls': os.getenv('SMTP_USE_TLS', 'true').lower() == 'true'
 }
 

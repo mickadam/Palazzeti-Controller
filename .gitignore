@@ -1,3 +1,4 @@
 raspberry_pi/venv/*
 raspberry_pi/_pycache/*
 raspberry_pi/__pycache__/*
+raspberry_pi/.env
