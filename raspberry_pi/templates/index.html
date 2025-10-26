@@ -75,6 +75,10 @@
                         <span class="status-icon" id="pelletIcon">🪵</span>
                         <span class="status-text" id="pelletStatus">Pellets disponibles</span>
                     </div>
+                    <div class="status-item" id="fillLevelItem" style="display: none;">
+                        <span class="status-icon" id="fillLevelIcon">📊</span>
+                        <span class="status-text" id="fillLevelStatus">Niveau: --%</span>
+                    </div>
                 </div>
                 <button class="btn-refresh" id="refreshBtn" onclick="refreshState()" title="Rafraîchir l'état et tenter la reconnexion">
                     <span class="refresh-icon" id="refreshIcon">🔄</span>
@@ -113,6 +117,18 @@
                     Définir
                 </button>
             </div>
+            
+            <div class="control-group">
+                <label class="control-label">Gestion des pellets</label>
+                <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                    <button class="btn btn-success" id="fillBtn" onclick="recordFill()" disabled>
+                        🪵 Remplissage
+                    </button>
+                </div>
+                <div id="fillLevelInfo" style="margin-top: 10px; font-size: 0.9em; color: #666; text-align: center; display: none;">
+                    <div id="fillLevelDetails"></div>
+                </div>
+            </div>
                 </div>
             </div>
 {% endblock %}
@@ -143,6 +159,12 @@
         const errorMessage = document.getElementById('errorMessage');
         const refreshBtn = document.getElementById('refreshBtn');
         const refreshIcon = document.getElementById('refreshIcon');
+        const fillLevelItem = document.getElementById('fillLevelItem');
+        const fillLevelIcon = document.getElementById('fillLevelIcon');
+        const fillLevelStatus = document.getElementById('fillLevelStatus');
+        const fillBtn = document.getElementById('fillBtn');
+        const fillLevelInfo = document.getElementById('fillLevelInfo');
+        const fillLevelDetails = document.getElementById('fillLevelDetails');
 
         // État actuel
         let currentState = {
@@ -154,7 +176,8 @@
             setpoint: '--',
             timer_enabled: false,
             error_code: 0,
-            error_message: 'Aucune erreur'
+            error_message: 'Aucune erreur',
+            fill_level: null
         };
 
         // Mise à jour de l'affichage du statut avec icônes
@@ -232,6 +255,9 @@
             
             // Mise à jour de l'affichage des pellets
             updatePelletDisplay(state);
+            
+            // Mise à jour de l'affichage du taux de remplissage
+            updateFillLevelDisplay(state.fill_level);
             
             // Mise à jour des températures
             if (typeof state.temperature === 'number') {
@@ -324,6 +350,33 @@
             }
         }
 
+        // Mise à jour de l'affichage du taux de remplissage
+        function updateFillLevelDisplay(fillData) {
+            if (fillData && fillData.fill_level !== null) {
+                fillLevelItem.style.display = 'flex';
+                fillLevelStatus.textContent = `Niveau: ${fillData.fill_level}%`;
+                
+                // Changer l'icône selon le niveau
+                if (fillData.fill_level > 50) {
+                    fillLevelIcon.textContent = '🟢';
+                } else if (fillData.fill_level > 20) {
+                    fillLevelIcon.textContent = '🟡';
+                } else {
+                    fillLevelIcon.textContent = '🔴';
+                }
+                
+                // Afficher les détails
+                fillLevelInfo.style.display = 'block';
+                fillLevelDetails.innerHTML = `
+                    Consommé depuis remplissage: ${fillData.consumption_since_fill} kg<br>
+                    Dernier remplissage: ${new Date(fillData.last_fill_date).toLocaleDateString('fr-FR')}
+                `;
+            } else {
+                fillLevelItem.style.display = 'none';
+                fillLevelInfo.style.display = 'none';
+            }
+        }
+
         // Mise à jour de l'affichage des erreurs
         function updateErrorDisplay() {
             // Afficher les erreurs seulement si on a tenté de se connecter
@@ -354,6 +407,7 @@
             // Désactiver/activer tous les contrôles
             tempSlider.disabled = !isReady;
             setTempBtn.disabled = !isReady || setTempBtn.disabled;
+            fillBtn.disabled = !isReady;
             updateTempButtons();
             
             // Appliquer le style d'inactivité
@@ -363,6 +417,86 @@
                 container.classList.add('interface-inactive');
             }
         }
+
+        // Enregistrer un remplissage
+        function recordFill() {
+            if (fillBtn.disabled) return;
+            
+            setFillLoading(true);
+            
+            fetchWithCancellation('/api/record_fill', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showMessage('Remplissage enregistré avec succès', 'success');
+                    
+                    // Mise à jour immédiate côté frontend (niveau à 100%)
+                    const immediateFillData = {
+                        fill_level: 100.0,
+                        consumption_since_fill: 0.0,
+                        capacity: 15.0,
+                        last_fill_date: new Date().toISOString()
+                    };
+                    currentState.fill_level = immediateFillData;
+                    updateFillLevelDisplay(immediateFillData);
+                    
+                    // Actualiser aussi depuis le serveur pour confirmer
+                    refreshFillLevelOnly();
+                } else {
+                    alert('Erreur: ' + data.error);
+                }
+            })
+            .catch(error => {
+                if (error.name !== 'AbortError') {
+                    console.error('Erreur:', error);
+                    alert('Erreur de communication');
+                }
+            })
+            .finally(() => {
+                setFillLoading(false);
+            });
+        }
+
+
+        // Actualiser seulement le taux de remplissage (optimisé)
+        function refreshFillLevelOnly() {
+            fetchWithCancellation('/api/fill_level')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    currentState.fill_level = data;
+                    updateFillLevelDisplay(data);
+                } else {
+                    console.log('Aucun remplissage enregistré ou erreur:', data.error);
+                    currentState.fill_level = null;
+                    updateFillLevelDisplay(null);
+                }
+            })
+            .catch(error => {
+                if (error.name !== 'AbortError') {
+                    console.error('Erreur lors de la lecture du niveau:', error);
+                }
+            });
+        }
+
+        // Gestion du loading pour le bouton de remplissage
+        function setFillLoading(loading) {
+            if (loading) {
+                fillBtn.disabled = true;
+                fillBtn.textContent = 'Enregistrement...';
+                fillBtn.classList.add('loading');
+            } else {
+                fillBtn.disabled = false;
+                fillBtn.textContent = '🪵 Remplissage';
+                fillBtn.classList.remove('loading');
+            }
+        }
+
 
         // Gestion du slider de température
         tempSlider.addEventListener('input', function() {
@@ -567,6 +701,7 @@
         currentState.timer_enabled = false;
         currentState.status = 'CHARGEMENT...';
         currentState.error_message = 'Chargement en cours...';
+        currentState.fill_level = null;
         
         // Forcer l'affichage de "--" dès le chargement
         currentTemp.textContent = '--';
@@ -575,6 +710,7 @@
         updateStatusDisplay(currentState);
         updateTimerDisplay(currentState);
         updatePelletDisplay(currentState);
+        updateFillLevelDisplay(null);
         updateErrorDisplay();
         updateInterfaceState();
 
@@ -594,6 +730,7 @@
             currentState.error_message = 'Chargement en cours...';
             currentState.pellet_consumption = null;
             currentState.pellet_consumption_raw = null;
+            currentState.fill_level = null;
             
             // Mettre à jour l'affichage immédiatement
             currentTemp.textContent = '--';
@@ -602,6 +739,7 @@
             updateStatusDisplay(currentState);
             updateTimerDisplay(currentState);
             updatePelletDisplay(currentState);
+            updateFillLevelDisplay(null);
             updateErrorDisplay();
             updateInterfaceState();
             

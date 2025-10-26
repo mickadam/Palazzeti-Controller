@@ -7,6 +7,7 @@ import logging
 from flask import Flask, render_template, request, jsonify
 from config import *
 from palazzetti_controller import PalazzettiController
+from consumption_storage import ConsumptionStorage
 
 # Configuration du logging
 import os
@@ -27,6 +28,7 @@ app.config['SECRET_KEY'] = 'palazzetti_secret'
 
 # Instance globale du contrôleur (sera initialisée dans main())
 controller = None
+consumption_storage = None
 
 
 @app.route('/')
@@ -38,6 +40,11 @@ def index():
 def timer():
     """Page de gestion du timer"""
     return render_template('timer.html')
+
+@app.route('/consumption')
+def consumption():
+    """Page de gestion de la consommation"""
+    return render_template('consumption.html')
 
 
 @app.route('/api/state')
@@ -63,6 +70,7 @@ def api_state():
             'power_level': 0,
             'alarm_status': 0,
             'timer_enabled': False,
+            'fill_level': None,
         }
         return jsonify(default_state)
     
@@ -75,6 +83,24 @@ def api_state():
         
         # Vérifier que l'état contient des données valides (pas de cache)
         if state.get('connected', False) and state.get('synchronized', False):
+            # Ajouter le taux de remplissage si disponible
+            try:
+                consumption = controller.get_pellet_consumption()
+                if consumption is not None and consumption_storage:
+                    # Mettre à jour le stockage
+                    consumption_storage.update_total_consumption(consumption)
+                    # Calculer le taux de remplissage
+                    fill_data = consumption_storage.get_fill_level(consumption)
+                    if fill_data:
+                        state['fill_level'] = fill_data
+                    else:
+                        state['fill_level'] = None
+                else:
+                    state['fill_level'] = None
+            except Exception as e:
+                logger.warning(f"Erreur lors de la lecture du taux de remplissage: {e}")
+                state['fill_level'] = None
+            
             logger.info("État lu avec succès depuis le poêle")
             return jsonify(state)
         else:
@@ -93,7 +119,8 @@ def api_state():
                 'power_level': 0,
                 'alarm_status': 0,
                 'timer_enabled': False,
-                'pellet_consumption_raw': None
+                'pellet_consumption_raw': None,
+                'fill_level': None
             }
             return jsonify(default_state)
     except Exception as e:
@@ -111,7 +138,8 @@ def api_state():
             'seco': 0,
             'power_level': 0,
             'alarm_status': 0,
-            'timer_enabled': False
+            'timer_enabled': False,
+            'fill_level': None
         }
         return jsonify(default_state)
 
@@ -183,6 +211,10 @@ def api_pellet_consumption():
     try:
         consumption = controller.get_pellet_consumption()
         if consumption is not None:
+            # Mettre à jour le stockage
+            if consumption_storage:
+                consumption_storage.update_total_consumption(consumption)
+            
             return jsonify({
                 'success': True,
                 'consumption': consumption,
@@ -201,6 +233,196 @@ def api_pellet_consumption():
             'success': False,
             'error': str(e),
             'consumption': None
+        }), 500
+
+@app.route('/api/fill_level')
+def api_fill_level():
+    """API pour obtenir le taux de remplissage du poêle"""
+    if controller is None or consumption_storage is None:
+        return jsonify({'error': 'Contrôleur ou stockage non initialisé'}), 500
+    
+    if not controller.is_connected():
+        return jsonify({'error': 'Connexion série perdue'}), 503
+    
+    try:
+        consumption = controller.get_pellet_consumption()
+        if consumption is not None:
+            fill_data = consumption_storage.get_fill_level(consumption)
+            if fill_data:
+                return jsonify({
+                    'success': True,
+                    'fill_level': fill_data['fill_level'],
+                    'consumption_since_fill': fill_data['consumption_since_fill'],
+                    'capacity': fill_data['capacity'],
+                    'last_fill_date': fill_data['last_fill_date'],
+                    'current_consumption': consumption
+                })
+            else:
+                return jsonify({
+                    'success': False,
+                    'error': 'Aucun remplissage enregistré',
+                    'fill_level': None
+                })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Impossible de lire la consommation de pellets'
+            }), 500
+    except Exception as e:
+        logger.error(f"Erreur lors de la lecture du taux de remplissage: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/record_fill', methods=['POST'])
+def api_record_fill():
+    """API pour enregistrer un remplissage du poêle"""
+    if controller is None or consumption_storage is None:
+        return jsonify({'error': 'Contrôleur ou stockage non initialisé'}), 500
+    
+    if not controller.is_connected():
+        return jsonify({'error': 'Connexion série perdue'}), 503
+    
+    try:
+        consumption = controller.get_pellet_consumption()
+        if consumption is not None:
+            consumption_storage.record_fill(consumption)
+            return jsonify({
+                'success': True,
+                'message': 'Remplissage enregistré avec succès',
+                'consumption_at_fill': consumption
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Impossible de lire la consommation de pellets'
+            }), 500
+    except Exception as e:
+        logger.error(f"Erreur lors de l'enregistrement du remplissage: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/maintenance_consumption')
+def api_maintenance_consumption():
+    """API pour obtenir la consommation depuis le dernier reset de maintenance"""
+    if controller is None or consumption_storage is None:
+        return jsonify({'error': 'Contrôleur ou stockage non initialisé'}), 500
+    
+    if not controller.is_connected():
+        return jsonify({'error': 'Connexion série perdue'}), 503
+    
+    try:
+        consumption = controller.get_pellet_consumption()
+        if consumption is not None:
+            maintenance_data = consumption_storage.get_maintenance_consumption(consumption)
+            if maintenance_data:
+                return jsonify({
+                    'success': True,
+                    'consumption_since_reset': maintenance_data['consumption_since_reset'],
+                    'reset_date': maintenance_data['reset_date'],
+                    'current_consumption': consumption
+                })
+            else:
+                return jsonify({
+                    'success': False,
+                    'error': 'Aucun reset de maintenance enregistré',
+                    'consumption_since_reset': None
+                })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Impossible de lire la consommation de pellets'
+            }), 500
+    except Exception as e:
+        logger.error(f"Erreur lors de la lecture de la consommation de maintenance: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/reset_maintenance', methods=['POST'])
+def api_reset_maintenance():
+    """API pour réinitialiser le compteur de maintenance"""
+    if controller is None or consumption_storage is None:
+        return jsonify({'error': 'Contrôleur ou stockage non initialisé'}), 500
+    
+    if not controller.is_connected():
+        return jsonify({'error': 'Connexion série perdue'}), 503
+    
+    try:
+        consumption = controller.get_pellet_consumption()
+        if consumption is not None:
+            consumption_storage.reset_maintenance_counter(consumption)
+            return jsonify({
+                'success': True,
+                'message': 'Compteur de maintenance réinitialisé avec succès',
+                'consumption_at_reset': consumption
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Impossible de lire la consommation de pellets'
+            }), 500
+    except Exception as e:
+        logger.error(f"Erreur lors de la réinitialisation du compteur de maintenance: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/consumption_status')
+def api_consumption_status():
+    """API légère pour vérifier la connexion et obtenir la consommation (optimisée pour la page consommation)"""
+    if controller is None or consumption_storage is None:
+        return jsonify({
+            'connected': False,
+            'synchronized': False,
+            'error': 'Contrôleur ou stockage non initialisé'
+        }), 500
+    
+    # Vérifier seulement la connexion (pas de lecture complète de l'état)
+    if not controller.is_connected():
+        return jsonify({
+            'connected': False,
+            'synchronized': False,
+            'error': 'Connexion série perdue'
+        }), 503
+    
+    try:
+        # Lire seulement la consommation (plus rapide que l'état complet)
+        consumption = controller.get_pellet_consumption()
+        if consumption is not None:
+            # Mettre à jour le stockage
+            consumption_storage.update_total_consumption(consumption)
+            
+            # Calculer le taux de remplissage
+            fill_data = consumption_storage.get_fill_level(consumption)
+            
+            # Calculer la consommation de maintenance
+            maintenance_data = consumption_storage.get_maintenance_consumption(consumption)
+            
+            return jsonify({
+                'connected': True,
+                'synchronized': True,
+                'total_consumption': consumption,
+                'fill_level': fill_data,
+                'maintenance_consumption': maintenance_data
+            })
+        else:
+            return jsonify({
+                'connected': True,
+                'synchronized': False,
+                'error': 'Impossible de lire la consommation de pellets'
+            }), 500
+    except Exception as e:
+        logger.error(f"Erreur lors de la lecture de la consommation: {e}")
+        return jsonify({
+            'connected': False,
+            'synchronized': False,
+            'error': str(e)
         }), 500
 
 
@@ -434,9 +656,10 @@ def main():
     import sys
     import signal
     
-    # Créer le contrôleur
-    global controller
+    # Créer le contrôleur et le stockage
+    global controller, consumption_storage
     controller = None
+    consumption_storage = None
     
     def signal_handler(signum, frame):
         """Gestionnaire de signal pour arrêt propre"""
@@ -451,8 +674,9 @@ def main():
     signal.signal(signal.SIGTERM, signal_handler)
     
     try:
-        # Créer le contrôleur
+        # Créer le contrôleur et le stockage
         controller = PalazzettiController()
+        consumption_storage = ConsumptionStorage()
         
         # Essayer de se connecter (mais ne pas arrêter si ça échoue)
         if controller.connect():

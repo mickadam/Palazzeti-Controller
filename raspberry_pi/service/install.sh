@@ -150,6 +150,7 @@ cp palazzetti_controller.py $INSTALL_DIR/
 cp serial_communicator.py $INSTALL_DIR/
 cp frame.py $INSTALL_DIR/
 cp config.py $INSTALL_DIR/
+cp consumption_storage.py $INSTALL_DIR/
 cp requirements.txt $INSTALL_DIR/
 
 # Répertoire templates
