@@ -55,7 +55,24 @@ def consumption():
 def api_state():
     """API pour obtenir l'état du poêle avec vérification de connexion"""
     if controller is None:
-        return jsonify({'error': 'Contrôleur non initialisé'}), 500
+        logger.warning("Contrôleur non initialisé - retour d'état par défaut")
+        default_state = {
+            'connected': False,
+            'synchronized': False,
+            'status': 'OFF',
+            'power': False,
+            'temperature': '--',
+            'setpoint': '--',
+            'night_mode': False,
+            'error_code': 0,
+            'error_message': 'Contrôleur non initialisé - veuillez patienter',
+            'seco': 0,
+            'power_level': 0,
+            'alarm_status': 0,
+            'timer_enabled': False,
+            'fill_level': None,
+        }
+        return jsonify(default_state)
     
     # Vérifier d'abord si la connexion est toujours active
     if not controller.is_connected():
@@ -78,15 +95,12 @@ def api_state():
         }
         return jsonify(default_state)
     
-    # Si connecté, tenter de lire l'état (avec test de communication)
+    # Si connecté, tenter de lire l'état
     try:
         state = controller.get_state()
         
-        # L'état des pellets est maintenant détecté via les codes d'erreur (E101)
-        # Plus besoin de lire la consommation de pellets
-        
-        # Vérifier que l'état contient des données valides (pas de cache)
-        if state.get('connected', False) and state.get('synchronized', False):
+        # Vérifier que l'état contient des données valides
+        if state and state.get('connected', False) and state.get('synchronized', False):
             # Ajouter le taux de remplissage si disponible
             try:
                 consumption = controller.get_pellet_consumption()
@@ -123,10 +137,10 @@ def api_state():
                 'power_level': 0,
                 'alarm_status': 0,
                 'timer_enabled': False,
-                'pellet_consumption_raw': None,
                 'fill_level': None
             }
             return jsonify(default_state)
+            
     except Exception as e:
         logger.error(f"Erreur lors de la lecture de l'état: {e}")
         default_state = {

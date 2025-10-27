@@ -80,10 +80,8 @@ class PalazzettiController:
         """Obtenir l'état complet du poêle"""
         # Vérifier d'abord si la connexion série est toujours active
         if not self.communicator.is_connected():
-            logger.warning("Connexion série perdue - retour d'état déconnecté")
-            self.state['connected'] = False
-            self.state['synchronized'] = False
-            self.state['error_message'] = 'Connexion série perdue - vérifiez le câble'
+            logger.warning("Connexion série perdue - retour d'état existant sans modification")
+            # Ne pas modifier l'état existant, juste retourner ce qu'on a
             return self.state
         
         if not self.state['connected']:
@@ -103,6 +101,39 @@ class PalazzettiController:
                 return self.state
             return self._read_state()
     
+    def get_state_for_notifications(self):
+        """Obtenir l'état pour les notifications sans modifier l'état interne"""
+        # Cette méthode ne modifie pas self.state, elle lit juste les données
+        try:
+            # Essayer de lire la consommation pour vérifier la communication
+            consumption = self.get_pellet_consumption()
+            if consumption is not None:
+                # Si on peut lire la consommation, on considère que la communication fonctionne
+                return {
+                    'connected': True,
+                    'synchronized': True,
+                    'error_code': 0,
+                    'error_message': '',
+                    'fill_level': {'fill_level': 100}  # Valeur par défaut
+                }
+            else:
+                return {
+                    'connected': False,
+                    'synchronized': False,
+                    'error_code': 0,
+                    'error_message': 'Communication impossible',
+                    'fill_level': None
+                }
+        except Exception as e:
+            logger.debug(f"Erreur lors de la lecture pour notifications: {e}")
+            return {
+                'connected': False,
+                'synchronized': False,
+                'error_code': 0,
+                'error_message': f'Erreur: {str(e)}',
+                'fill_level': None
+            }
+
     def get_pellet_consumption(self):
         """Obtenir la consommation de pellets"""
         if not self.communicator.is_connected():

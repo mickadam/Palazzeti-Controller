@@ -79,10 +79,10 @@ class NotificationScheduler:
             return
         
         try:
-            # Lire l'état du poêle
-            state = self.controller.get_state()
+            # Lire l'état du poêle pour les notifications (sans modifier l'état interne)
+            state = self.controller.get_state_for_notifications()
             if not state:
-                logger.warning("Impossible de lire l'état du poêle")
+                logger.warning("Impossible de lire l'état du poêle pour les notifications")
                 return
             
             # Vérifier les conditions d'alerte email

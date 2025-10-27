@@ -319,7 +319,7 @@ if systemctl is-active --quiet $SERVICE_NAME; then
         echo "     - TO_EMAILS: emails de destination (séparés par des virgules)"
         echo "  2. Redémarrez le service:"
         echo "     sudo systemctl restart $SERVICE_NAME"
-        echo "  3. Testez les notifications: http://$(hostname -I | awk '{print $1}'):5000/notifications"
+        echo "  3. Testez les notifications: curl -X POST http://$(hostname -I | awk '{print $1}'):5000/api/notifications/test"
         echo ""
         log_info "📧 Pour Gmail, utilisez un mot de passe d'application:"
         echo "  https://support.google.com/accounts/answer/185833"
